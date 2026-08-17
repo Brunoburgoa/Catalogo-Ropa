@@ -4,6 +4,8 @@ import {
   FaCartPlus,
   FaChevronLeft,
   FaChevronRight,
+  FaExpand,
+  FaTimes,
 } from "react-icons/fa";
 
 import Navbar from "../components/Navbar/Navbar";
@@ -19,8 +21,12 @@ function ProductPage() {
 
   const [product, setProduct] = useState(null);
   const [selectedImage, setSelectedImage] = useState(0);
+  const [isLightboxOpen, setIsLightboxOpen] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+
+  const productImages = (product?.imagenes || []).filter(Boolean);
+  const productImageCount = productImages.length;
 
   useEffect(() => {
     async function loadProduct() {
@@ -51,6 +57,40 @@ function ProductPage() {
 
     loadProduct();
   }, [id]);
+
+  useEffect(() => {
+    if (!isLightboxOpen) {
+      return undefined;
+    }
+
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+
+    const handleKeyDown = (event) => {
+      if (event.key === "Escape") {
+        setIsLightboxOpen(false);
+      }
+
+      if (productImageCount > 1 && event.key === "ArrowLeft") {
+        setSelectedImage((current) =>
+          current === 0 ? productImageCount - 1 : current - 1,
+        );
+      }
+
+      if (productImageCount > 1 && event.key === "ArrowRight") {
+        setSelectedImage((current) =>
+          current === productImageCount - 1 ? 0 : current + 1,
+        );
+      }
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+
+    return () => {
+      document.body.style.overflow = previousOverflow;
+      window.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [isLightboxOpen, productImageCount]);
 
   if (loading) {
     return (
@@ -98,8 +138,6 @@ function ProductPage() {
     (item) => item.id === product.id,
   );
 
-  const productImages = (product.imagenes || []).filter(Boolean);
-
   const handleAddToCart = () => {
     addToCart(product);
   };
@@ -138,18 +176,30 @@ function ProductPage() {
           <div>
             <div className="relative overflow-hidden rounded-2xl bg-neutral-100">
               {productImages.length > 0 ? (
-                <img
-                  src={getOptimizedImageUrl(
-                    productImages[selectedImage],
-                    {
-                      width: 1200,
-                      height: 1600,
-                    },
-                  )}
-                  alt={product.nombre}
-                  decoding="async"
-                  className="aspect-[3/4] w-full object-cover"
-                />
+                <button
+                  type="button"
+                  onClick={() => setIsLightboxOpen(true)}
+                  aria-label={`Ampliar imagen de ${product.nombre}`}
+                  className="group relative block w-full cursor-zoom-in"
+                >
+                  <img
+                    src={getOptimizedImageUrl(
+                      productImages[selectedImage],
+                      {
+                        width: 1200,
+                        height: 1600,
+                      },
+                    )}
+                    alt={product.nombre}
+                    decoding="async"
+                    className="aspect-[3/4] w-full object-contain"
+                  />
+
+                  <span className="pointer-events-none absolute bottom-3 right-3 flex items-center gap-2 rounded-full bg-black/65 px-3 py-2 text-xs font-semibold text-white opacity-90 backdrop-blur-sm transition group-hover:bg-black/80">
+                    <FaExpand />
+                    Ampliar
+                  </span>
+                </button>
               ) : (
                 <div className="flex aspect-[3/4] w-full items-center justify-center bg-neutral-200 text-sm font-medium text-neutral-500">
                   Sin imagen
@@ -157,7 +207,7 @@ function ProductPage() {
               )}
 
               {isSold && (
-                <div className="absolute inset-0 flex items-center justify-center bg-black/35">
+                <div className="pointer-events-none absolute inset-0 flex items-center justify-center bg-black/35">
                   <span className="rounded-full bg-neutral-950/90 px-5 py-2 text-sm font-bold tracking-wide text-white">
                     VENDIDO
                   </span>
@@ -328,6 +378,67 @@ function ProductPage() {
           </div>
         </section>
       </main>
+
+      {isLightboxOpen && productImages.length > 0 && (
+        <div
+          role="dialog"
+          aria-modal="true"
+          aria-label={`Galería de ${product.nombre}`}
+          onClick={(event) => {
+            if (event.target === event.currentTarget) {
+              setIsLightboxOpen(false);
+            }
+          }}
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/90 p-4 sm:p-8"
+        >
+          <button
+            type="button"
+            onClick={() => setIsLightboxOpen(false)}
+            aria-label="Cerrar imagen ampliada"
+            className="absolute right-4 top-4 z-10 flex h-11 w-11 items-center justify-center rounded-full bg-white/15 text-xl text-white backdrop-blur-sm transition hover:bg-white/25 sm:right-6 sm:top-6"
+          >
+            <FaTimes />
+          </button>
+
+          <img
+            src={getOptimizedImageUrl(
+              productImages[selectedImage],
+              {
+                width: 2000,
+                height: 2000,
+              },
+            )}
+            alt={`${product.nombre} - imagen ampliada ${selectedImage + 1}`}
+            className="max-h-[88vh] max-w-[92vw] object-contain"
+          />
+
+          {productImages.length > 1 && (
+            <>
+              <button
+                type="button"
+                onClick={handlePreviousImage}
+                aria-label="Imagen ampliada anterior"
+                className="absolute left-3 top-1/2 flex h-11 w-11 -translate-y-1/2 items-center justify-center rounded-full bg-white/15 text-white backdrop-blur-sm transition hover:bg-white/25 sm:left-6"
+              >
+                <FaChevronLeft />
+              </button>
+
+              <button
+                type="button"
+                onClick={handleNextImage}
+                aria-label="Imagen ampliada siguiente"
+                className="absolute right-3 top-1/2 flex h-11 w-11 -translate-y-1/2 items-center justify-center rounded-full bg-white/15 text-white backdrop-blur-sm transition hover:bg-white/25 sm:right-6"
+              >
+                <FaChevronRight />
+              </button>
+
+              <p className="absolute bottom-4 left-1/2 -translate-x-1/2 rounded-full bg-black/55 px-3 py-1.5 text-xs font-medium text-white sm:bottom-6">
+                {selectedImage + 1} / {productImages.length}
+              </p>
+            </>
+          )}
+        </div>
+      )}
     </div>
   );
 }
