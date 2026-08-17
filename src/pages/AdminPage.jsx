@@ -16,30 +16,36 @@ function AdminPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
-  const loadProducts = async () => {
-    try {
-      setLoading(true);
-      setError("");
-
-      const data = await getProducts();
-
-      setProducts(data);
-    } catch (error) {
-      console.error(
-        "Error al cargar productos:",
-        error,
-      );
-
-      setError(
-        "No se pudieron cargar los productos.",
-      );
-    } finally {
-      setLoading(false);
-    }
-  };
-
   useEffect(() => {
-    loadProducts();
+    let isActive = true;
+
+    getProducts()
+      .then((data) => {
+        if (isActive) {
+          setProducts(data);
+        }
+      })
+      .catch((error) => {
+        console.error(
+          "Error al cargar productos:",
+          error,
+        );
+
+        if (isActive) {
+          setError(
+            "No se pudieron cargar los productos.",
+          );
+        }
+      })
+      .finally(() => {
+        if (isActive) {
+          setLoading(false);
+        }
+      });
+
+    return () => {
+      isActive = false;
+    };
   }, []);
 
   const handleDelete = async (product) => {

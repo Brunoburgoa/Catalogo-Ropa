@@ -1,8 +1,9 @@
 import { Link } from "react-router-dom";
 
-import { useCart } from "../context/CartContext";
+import { useCart } from "../context/cartStore";
+import { getOptimizedImageUrl } from "../utils/cloudinaryImage";
 
-const WHATSAPP_NUMBER = "5492612095998";
+const WHATSAPP_NUMBER = "5492613616857";
 
 function CartPage() {
   const { cart, removeFromCart, clearCart } =
@@ -112,11 +113,26 @@ function CartPage() {
                 key={product.id}
                 className="flex flex-col gap-4 rounded-2xl border border-neutral-200 bg-white p-4 shadow-sm sm:flex-row sm:items-center"
               >
-                <img
-                  src={product.imagenes?.[0]}
-                  alt={product.nombre}
-                  className="aspect-square w-full rounded-xl object-cover sm:h-28 sm:w-24"
-                />
+                {product.imagenes?.find(Boolean) ? (
+                  <img
+                    src={getOptimizedImageUrl(
+                      product.imagenes.find(Boolean),
+                      {
+                        width: 240,
+                        height: 240,
+                        crop: "fill",
+                      },
+                    )}
+                    alt={product.nombre}
+                    loading="lazy"
+                    decoding="async"
+                    className="aspect-square w-full rounded-xl object-cover sm:h-28 sm:w-24"
+                  />
+                ) : (
+                  <div className="flex aspect-square w-full items-center justify-center rounded-xl bg-neutral-200 text-xs font-medium text-neutral-500 sm:h-28 sm:w-24">
+                    Sin imagen
+                  </div>
+                )}
 
                 <div className="min-w-0 flex-1">
                   <h2 className="text-lg font-semibold text-neutral-950">

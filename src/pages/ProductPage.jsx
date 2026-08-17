@@ -7,8 +7,9 @@ import {
 } from "react-icons/fa";
 
 import Navbar from "../components/Navbar/Navbar";
-import { useCart } from "../context/CartContext";
+import { useCart } from "../context/cartStore";
 import { getProductById } from "../services/productService";
+import { getOptimizedImageUrl } from "../utils/cloudinaryImage";
 
 function ProductPage() {
   const { id } = useParams();
@@ -97,6 +98,8 @@ function ProductPage() {
     (item) => item.id === product.id,
   );
 
+  const productImages = (product.imagenes || []).filter(Boolean);
+
   const handleAddToCart = () => {
     addToCart(product);
   };
@@ -104,14 +107,14 @@ function ProductPage() {
   const handlePreviousImage = () => {
     setSelectedImage((current) =>
       current === 0
-        ? product.imagenes.length - 1
+        ? productImages.length - 1
         : current - 1,
     );
   };
 
   const handleNextImage = () => {
     setSelectedImage((current) =>
-      current === product.imagenes.length - 1
+      current === productImages.length - 1
         ? 0
         : current + 1,
     );
@@ -134,11 +137,24 @@ function ProductPage() {
           {/* Imágenes */}
           <div>
             <div className="relative overflow-hidden rounded-2xl bg-neutral-100">
-              <img
-                src={product.imagenes?.[selectedImage]}
-                alt={product.nombre}
-                className="aspect-[3/4] w-full object-cover"
-              />
+              {productImages.length > 0 ? (
+                <img
+                  src={getOptimizedImageUrl(
+                    productImages[selectedImage],
+                    {
+                      width: 1200,
+                      height: 1600,
+                    },
+                  )}
+                  alt={product.nombre}
+                  decoding="async"
+                  className="aspect-[3/4] w-full object-cover"
+                />
+              ) : (
+                <div className="flex aspect-[3/4] w-full items-center justify-center bg-neutral-200 text-sm font-medium text-neutral-500">
+                  Sin imagen
+                </div>
+              )}
 
               {isSold && (
                 <div className="absolute inset-0 flex items-center justify-center bg-black/35">
@@ -148,7 +164,7 @@ function ProductPage() {
                 </div>
               )}
 
-              {product.imagenes?.length > 1 && (
+              {productImages.length > 1 && (
                 <>
                   <button
                     type="button"
@@ -171,9 +187,9 @@ function ProductPage() {
               )}
             </div>
 
-            {product.imagenes?.length > 1 && (
+            {productImages.length > 1 && (
               <div className="mt-4 grid grid-cols-4 gap-3 sm:grid-cols-6">
-                {product.imagenes.map((imagen, index) => (
+                {productImages.map((imagen, index) => (
                   <button
                     type="button"
                     key={`${imagen}-${index}`}
@@ -185,8 +201,14 @@ function ProductPage() {
                     }`}
                   >
                     <img
-                      src={imagen}
+                      src={getOptimizedImageUrl(imagen, {
+                        width: 240,
+                        height: 240,
+                        crop: "fill",
+                      })}
                       alt={`${product.nombre} - imagen ${index + 1}`}
+                      loading="lazy"
+                      decoding="async"
                       className="aspect-square w-full object-cover"
                     />
                   </button>

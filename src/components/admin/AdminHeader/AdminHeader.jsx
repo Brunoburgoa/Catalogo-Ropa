@@ -1,20 +1,23 @@
 import { Link, useNavigate } from "react-router-dom";
 
-import { useAuth } from "../../../context/AuthContext";
+import { useAuth } from "../../../context/authStore";
 
 function AdminHeader() {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
 
   const handleLogout = async () => {
+    navigate("/", { replace: true });
+
     try {
       await logout();
-      navigate("/login");
     } catch (error) {
       console.error(
         "Error al cerrar sesión:",
         error,
       );
+
+      navigate("/admin", { replace: true });
     }
   };
 

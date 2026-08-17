@@ -24,9 +24,6 @@ function CategoryManager() {
 
   const loadCategories = async () => {
     try {
-      setLoading(true);
-      setError("");
-
       const data = await getCategories();
 
       setCategories(data);
@@ -45,7 +42,35 @@ function CategoryManager() {
   };
 
   useEffect(() => {
-    loadCategories();
+    let isActive = true;
+
+    getCategories()
+      .then((data) => {
+        if (isActive) {
+          setCategories(data);
+        }
+      })
+      .catch((error) => {
+        console.error(
+          "Error al cargar categorÃ­as:",
+          error,
+        );
+
+        if (isActive) {
+          setError(
+            "No se pudieron cargar las categorÃ­as.",
+          );
+        }
+      })
+      .finally(() => {
+        if (isActive) {
+          setLoading(false);
+        }
+      });
+
+    return () => {
+      isActive = false;
+    };
   }, []);
 
   const handleCreateCategory = async (

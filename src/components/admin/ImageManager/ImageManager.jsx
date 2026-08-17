@@ -1,10 +1,22 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 
 import { uploadImages } from "../../../services/cloudinaryService";
+import { getOptimizedImageUrl } from "../../../utils/cloudinaryImage";
+
+const MAX_IMAGES = 6;
+const MAX_FILE_SIZE = 10 * 1024 * 1024;
+const ALLOWED_IMAGE_TYPES = new Set([
+  "image/jpeg",
+  "image/png",
+  "image/webp",
+]);
+const ACCEPTED_IMAGE_FORMATS = ".jpg,.jpeg,.png,.webp";
 
 function ImageManager({
   images,
   onChange,
+  onUploadingChange,
+  validationError,
 }) {
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState("");
@@ -16,7 +28,7 @@ function ImageManager({
       return;
     }
 
-    const remainingSlots = 6 - images.length;
+    const remainingSlots = MAX_IMAGES - images.length;
 
     if (files.length > remainingSlots) {
       setError(
@@ -30,21 +42,39 @@ function ImageManager({
     }
 
     const invalidFile = files.find(
-      (file) => !file.type.startsWith("image/"),
+      (file) => !ALLOWED_IMAGE_TYPES.has(file.type),
     );
 
     if (invalidFile) {
-      setError("Solo se pueden seleccionar imágenes.");
+      setError(
+        "Formato no permitido. Usá imágenes JPG, JPEG, PNG o WebP.",
+      );
 
       event.target.value = "";
       return;
     }
 
+    const oversizedFile = files.find(
+      (file) => file.size > MAX_FILE_SIZE,
+    );
+
+    if (oversizedFile) {
+      setError(
+        `La imagen "${oversizedFile.name}" supera el máximo de 10 MB.`,
+      );
+
+      event.target.value = "";
+      return;
+    }
+
+    let previews = [];
+
     try {
       setError("");
       setUploading(true);
+      onUploadingChange?.(true);
 
-      const previews = files.map((file) => ({
+      previews = files.map((file) => ({
         file,
         preview: URL.createObjectURL(file),
       }));
@@ -88,8 +118,14 @@ function ImageManager({
       setError(
         "No se pudieron subir las imágenes.",
       );
+
+      onChange(images);
+      previews.forEach((item) => {
+        URL.revokeObjectURL(item.preview);
+      });
     } finally {
       setUploading(false);
+      onUploadingChange?.(false);
       event.target.value = "";
     }
   };
@@ -131,13 +167,23 @@ function ImageManager({
   return (
     <div className="space-y-4">
       <div>
+        {validationError && (
+          <p
+            id="imagenes-error"
+            role="alert"
+            className="mb-3 rounded-lg bg-red-100 p-3 text-sm text-red-700"
+          >
+            {validationError}
+          </p>
+        )}
+
         <label className="mb-2 block font-medium">
           Imágenes
         </label>
 
         <p className="text-sm text-gray-500">
-          Máximo 6 imágenes. La primera será la imagen
-          principal.
+          Máximo 6 imágenes de hasta 10 MB cada una. Formatos JPG,
+          JPEG, PNG o WebP. La primera será la imagen principal.
         </p>
       </div>
 
@@ -149,8 +195,14 @@ function ImageManager({
               className="relative overflow-hidden rounded-lg border bg-white"
             >
               <img
-                src={image}
+                src={getOptimizedImageUrl(image, {
+                  width: 480,
+                  height: 480,
+                  crop: "fill",
+                })}
                 alt={`Producto - imagen ${index + 1}`}
+                loading="lazy"
+                decoding="async"
                 className="aspect-square w-full object-cover"
               />
 
@@ -205,7 +257,7 @@ function ImageManager({
       )}
 
       <div className="flex flex-col gap-3">
-        {images.length < 6 && (
+        {images.length < MAX_IMAGES && (
           <label
             className={`cursor-pointer rounded-lg border border-gray-300 px-4 py-2.5 text-center font-medium hover:bg-gray-100 ${
               uploading
@@ -219,7 +271,7 @@ function ImageManager({
 
             <input
               type="file"
-              accept="image/*"
+              accept={ACCEPTED_IMAGE_FORMATS}
               multiple
               onChange={handleFileChange}
               disabled={uploading}

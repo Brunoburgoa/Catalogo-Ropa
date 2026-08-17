@@ -11,6 +11,7 @@ import {
 } from "../services/categoryService";
 
 import ImageManager from "../components/admin/ImageManager/ImageManager";
+import { validateProduct } from "../utils/productValidation";
 
 function EditProductPage() {
   const { id } = useParams();
@@ -36,9 +37,15 @@ function EditProductPage() {
     useState(true);
 
   const [saving, setSaving] = useState(false);
+  const [imagesUploading, setImagesUploading] =
+    useState(false);
 
   const [loadError, setLoadError] = useState("");
   const [formError, setFormError] = useState("");
+
+  const fieldErrors = validateProduct(formData);
+  const isFormValid =
+    Object.keys(fieldErrors).length === 0;
 
   useEffect(() => {
     const loadData = async () => {
@@ -126,11 +133,7 @@ function EditProductPage() {
   const handleSubmit = async (event) => {
     event.preventDefault();
 
-    if (formData.imagenes.length === 0) {
-      setFormError(
-        "La publicación debe tener al menos una imagen.",
-      );
-
+    if (!isFormValid || imagesUploading) {
       return;
     }
 
@@ -153,6 +156,10 @@ function EditProductPage() {
     } finally {
       setSaving(false);
     }
+  };
+
+  const handleCancel = () => {
+    navigate("/admin");
   };
 
   if (loading) {
@@ -213,9 +220,20 @@ function EditProductPage() {
 
       <form
         onSubmit={handleSubmit}
+        noValidate
         className="space-y-6 rounded-xl border bg-white p-6 shadow-sm"
       >
         <div>
+          {fieldErrors.nombre && (
+            <p
+              id="nombre-error"
+              role="alert"
+              className="mb-3 rounded-lg bg-red-100 p-3 text-sm text-red-700"
+            >
+              {fieldErrors.nombre}
+            </p>
+          )}
+
           <label className="mb-2 block font-medium">
             Nombre
           </label>
@@ -226,11 +244,25 @@ function EditProductPage() {
             value={formData.nombre}
             onChange={handleChange}
             required
+            aria-invalid={Boolean(fieldErrors.nombre)}
+            aria-describedby={
+              fieldErrors.nombre ? "nombre-error" : undefined
+            }
             className="w-full rounded-lg border border-gray-300 px-4 py-2.5 outline-none focus:border-sky-500"
           />
         </div>
 
         <div>
+          {fieldErrors.precio && (
+            <p
+              id="precio-error"
+              role="alert"
+              className="mb-3 rounded-lg bg-red-100 p-3 text-sm text-red-700"
+            >
+              {fieldErrors.precio}
+            </p>
+          )}
+
           <label className="mb-2 block font-medium">
             Precio
           </label>
@@ -242,11 +274,25 @@ function EditProductPage() {
             onChange={handleChange}
             min="0"
             required
+            aria-invalid={Boolean(fieldErrors.precio)}
+            aria-describedby={
+              fieldErrors.precio ? "precio-error" : undefined
+            }
             className="w-full rounded-lg border border-gray-300 px-4 py-2.5 outline-none focus:border-sky-500"
           />
         </div>
 
         <div>
+          {fieldErrors.talle && (
+            <p
+              id="talle-error"
+              role="alert"
+              className="mb-3 rounded-lg bg-red-100 p-3 text-sm text-red-700"
+            >
+              {fieldErrors.talle}
+            </p>
+          )}
+
           <label className="mb-2 block font-medium">
             Talle
           </label>
@@ -256,6 +302,10 @@ function EditProductPage() {
             value={formData.talle}
             onChange={handleChange}
             required
+            aria-invalid={Boolean(fieldErrors.talle)}
+            aria-describedby={
+              fieldErrors.talle ? "talle-error" : undefined
+            }
             className="w-full rounded-lg border border-gray-300 px-4 py-2.5"
           >
             <option value="">
@@ -287,6 +337,16 @@ function EditProductPage() {
         </div>
 
         <div>
+          {fieldErrors.categoria && (
+            <p
+              id="categoria-error"
+              role="alert"
+              className="mb-3 rounded-lg bg-red-100 p-3 text-sm text-red-700"
+            >
+              {fieldErrors.categoria}
+            </p>
+          )}
+
           <label className="mb-2 block font-medium">
             Categoría
           </label>
@@ -296,6 +356,12 @@ function EditProductPage() {
             value={formData.categoria}
             onChange={handleChange}
             required
+            aria-invalid={Boolean(fieldErrors.categoria)}
+            aria-describedby={
+              fieldErrors.categoria
+                ? "categoria-error"
+                : undefined
+            }
             disabled={
               loadingCategories ||
               categories.length === 0
@@ -322,6 +388,16 @@ function EditProductPage() {
         </div>
 
         <div>
+          {fieldErrors.epoca && (
+            <p
+              id="epoca-error"
+              role="alert"
+              className="mb-3 rounded-lg bg-red-100 p-3 text-sm text-red-700"
+            >
+              {fieldErrors.epoca}
+            </p>
+          )}
+
           <label className="mb-2 block font-medium">
             Época
           </label>
@@ -331,6 +407,10 @@ function EditProductPage() {
             value={formData.epoca}
             onChange={handleChange}
             required
+            aria-invalid={Boolean(fieldErrors.epoca)}
+            aria-describedby={
+              fieldErrors.epoca ? "epoca-error" : undefined
+            }
             className="w-full rounded-lg border border-gray-300 px-4 py-2.5"
           >
             <option value="">
@@ -348,6 +428,16 @@ function EditProductPage() {
         </div>
 
         <div>
+          {fieldErrors.condicion && (
+            <p
+              id="condicion-error"
+              role="alert"
+              className="mb-3 rounded-lg bg-red-100 p-3 text-sm text-red-700"
+            >
+              {fieldErrors.condicion}
+            </p>
+          )}
+
           <label className="mb-2 block font-medium">
             Condición
           </label>
@@ -357,6 +447,12 @@ function EditProductPage() {
             value={formData.condicion}
             onChange={handleChange}
             required
+            aria-invalid={Boolean(fieldErrors.condicion)}
+            aria-describedby={
+              fieldErrors.condicion
+                ? "condicion-error"
+                : undefined
+            }
             className="w-full rounded-lg border border-gray-300 px-4 py-2.5"
           >
             <option value="">
@@ -378,6 +474,16 @@ function EditProductPage() {
         </div>
 
         <div>
+          {fieldErrors.estado && (
+            <p
+              id="estado-error"
+              role="alert"
+              className="mb-3 rounded-lg bg-red-100 p-3 text-sm text-red-700"
+            >
+              {fieldErrors.estado}
+            </p>
+          )}
+
           <label className="mb-2 block font-medium">
             Estado
           </label>
@@ -387,6 +493,10 @@ function EditProductPage() {
             value={formData.estado}
             onChange={handleChange}
             required
+            aria-invalid={Boolean(fieldErrors.estado)}
+            aria-describedby={
+              fieldErrors.estado ? "estado-error" : undefined
+            }
             className="w-full rounded-lg border border-gray-300 px-4 py-2.5"
           >
             <option value="Disponible">
@@ -417,6 +527,16 @@ function EditProductPage() {
         </div>
 
         <div>
+          {fieldErrors.descripcion && (
+            <p
+              id="descripcion-error"
+              role="alert"
+              className="mb-3 rounded-lg bg-red-100 p-3 text-sm text-red-700"
+            >
+              {fieldErrors.descripcion}
+            </p>
+          )}
+
           <label className="mb-2 block font-medium">
             Descripción
           </label>
@@ -427,6 +547,12 @@ function EditProductPage() {
             onChange={handleChange}
             rows="5"
             required
+            aria-invalid={Boolean(fieldErrors.descripcion)}
+            aria-describedby={
+              fieldErrors.descripcion
+                ? "descripcion-error"
+                : undefined
+            }
             className="w-full resize-y rounded-lg border border-gray-300 px-4 py-2.5 outline-none focus:border-sky-500"
           />
         </div>
@@ -434,21 +560,38 @@ function EditProductPage() {
         <ImageManager
           images={formData.imagenes}
           onChange={handleImagesChange}
+          onUploadingChange={setImagesUploading}
+          validationError={fieldErrors.imagenes}
         />
 
-        <button
-          type="submit"
-          disabled={
-            saving ||
-            loadingCategories ||
-            categories.length === 0
-          }
-          className="w-full rounded-lg bg-sky-600 py-3 font-medium text-white hover:bg-sky-700 disabled:cursor-not-allowed disabled:opacity-50"
-        >
-          {saving
-            ? "Guardando cambios..."
-            : "Guardar cambios"}
-        </button>
+        <div className="flex flex-col-reverse gap-3 sm:flex-row">
+          <button
+            type="button"
+            onClick={handleCancel}
+            disabled={saving || imagesUploading}
+            className="w-full rounded-lg border border-gray-300 bg-white py-3 font-medium text-gray-700 transition-colors hover:bg-gray-100 disabled:cursor-not-allowed disabled:opacity-50 sm:w-auto sm:min-w-40"
+          >
+            Cancelar
+          </button>
+
+          <button
+            type="submit"
+            disabled={
+              saving ||
+              imagesUploading ||
+              !isFormValid ||
+              loadingCategories ||
+              categories.length === 0
+            }
+            className="w-full flex-1 rounded-lg bg-sky-600 py-3 font-medium text-white hover:bg-sky-700 disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            {saving
+              ? "Guardando cambios..."
+              : imagesUploading
+                ? "Subiendo imágenes..."
+                : "Guardar cambios"}
+          </button>
+        </div>
       </form>
     </main>
   );

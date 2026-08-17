@@ -101,23 +101,65 @@ function CatalogPage() {
         );
       }
 
+      if (
+        a.estado === "Disponible" &&
+        b.estado === "Vendido"
+      ) {
+        return -1;
+      }
+
+      if (
+        a.estado === "Vendido" &&
+        b.estado === "Disponible"
+      ) {
+        return 1;
+      }
+
       return 0;
     });
+
+  const activeFilterCount = [
+    search,
+    category,
+    condition,
+    epoca,
+    talle,
+    sort,
+  ].filter(Boolean).length;
+
+  const clearFilters = () => {
+    setSearch("");
+    setCategory("");
+    setCondition("");
+    setEpoca("");
+    setTalle("");
+    setSort("");
+  };
 
   return (
     <div className="min-h-screen bg-neutral-50">
       <Navbar />
 
-      <main className="mx-auto w-full max-w-7xl px-5 py-8 sm:px-8 lg:py-10">
-        <header className="mb-7">
-          <h1 className="text-3xl font-bold tracking-tight text-neutral-950 sm:text-4xl">
-            Catálogo
-          </h1>
+      <main className="mx-auto w-full max-w-[1480px] px-4 py-6 sm:px-6 sm:py-8 lg:px-8 lg:py-10">
+        <header className="relative mb-6 overflow-hidden rounded-[1.5rem] bg-[#27221e] px-6 py-7 text-white shadow-sm sm:px-9 sm:py-8 lg:px-11 lg:py-9">
+          <div className="absolute -right-20 -top-24 h-64 w-64 rounded-full bg-[#d9a273]/20 blur-3xl" />
+          <div className="absolute -bottom-28 right-1/4 h-52 w-52 rounded-full bg-white/10 blur-3xl" />
 
-          <p className="mt-2 max-w-2xl text-sm leading-relaxed text-neutral-500 sm:text-base">
-            Explorá las prendas y encontrá lo que
-            estás buscando.
-          </p>
+          <div className="relative max-w-3xl">
+            <p className="mb-3 text-xs font-bold uppercase tracking-[0.22em] text-[#e7bd97]">
+              Venta de garaje · Prendas únicas
+            </p>
+
+            <h1 className="text-2xl font-bold leading-tight tracking-tight sm:text-3xl lg:text-4xl">
+              Ropa nueva y usada,
+              <span className="block text-[#e7bd97]">una oportunidad única.</span>
+            </h1>
+
+            <p className="mt-4 max-w-2xl text-sm leading-6 text-neutral-300 sm:text-base">
+              Cada prenda es única y está esperando una nueva historia.
+              Encontrá tu próxima favorita antes de que se vaya.
+            </p>
+          </div>
         </header>
 
         <CatalogToolbar
@@ -134,6 +176,9 @@ function CatalogPage() {
           setSize={setTalle}
           sort={sort}
           setSort={setSort}
+          resultsCount={filteredProducts.length}
+          activeFilterCount={activeFilterCount}
+          onClearFilters={clearFilters}
         />
 
         {loading ? (

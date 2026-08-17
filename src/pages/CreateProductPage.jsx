@@ -5,6 +5,7 @@ import { createProduct } from "../services/productService";
 import { getCategories } from "../services/categoryService";
 
 import ImageManager from "../components/admin/ImageManager/ImageManager";
+import { validateProduct } from "../utils/productValidation";
 
 function CreateProductPage() {
   const navigate = useNavigate();
@@ -26,7 +27,13 @@ function CreateProductPage() {
     useState(true);
 
   const [saving, setSaving] = useState(false);
+  const [imagesUploading, setImagesUploading] =
+    useState(false);
   const [error, setError] = useState("");
+
+  const fieldErrors = validateProduct(formData);
+  const isFormValid =
+    Object.keys(fieldErrors).length === 0;
 
   useEffect(() => {
     const loadCategories = async () => {
@@ -60,6 +67,8 @@ function CreateProductPage() {
       ...current,
       [name]: value,
     }));
+
+    setError("");
   };
 
   const handleImagesChange = (images) => {
@@ -74,11 +83,7 @@ function CreateProductPage() {
   const handleSubmit = async (event) => {
     event.preventDefault();
 
-    if (formData.imagenes.length === 0) {
-      setError(
-        "Debés agregar al menos una imagen para crear la publicación.",
-      );
-
+    if (!isFormValid || imagesUploading) {
       return;
     }
 
@@ -133,9 +138,20 @@ function CreateProductPage() {
 
       <form
         onSubmit={handleSubmit}
+        noValidate
         className="space-y-6 rounded-xl border bg-white p-6 shadow-sm"
       >
         <div>
+          {fieldErrors.nombre && (
+            <p
+              id="nombre-error"
+              role="alert"
+              className="mb-3 rounded-lg bg-red-100 p-3 text-sm text-red-700"
+            >
+              {fieldErrors.nombre}
+            </p>
+          )}
+
           <label className="mb-2 block font-medium">
             Nombre
           </label>
@@ -147,11 +163,25 @@ function CreateProductPage() {
             onChange={handleChange}
             placeholder="Ej: Remera Adidas"
             required
+            aria-invalid={Boolean(fieldErrors.nombre)}
+            aria-describedby={
+              fieldErrors.nombre ? "nombre-error" : undefined
+            }
             className="w-full rounded-lg border border-gray-300 px-4 py-2.5 outline-none focus:border-sky-500"
           />
         </div>
 
         <div>
+          {fieldErrors.precio && (
+            <p
+              id="precio-error"
+              role="alert"
+              className="mb-3 rounded-lg bg-red-100 p-3 text-sm text-red-700"
+            >
+              {fieldErrors.precio}
+            </p>
+          )}
+
           <label className="mb-2 block font-medium">
             Precio
           </label>
@@ -164,11 +194,25 @@ function CreateProductPage() {
             placeholder="Ej: 18000"
             min="0"
             required
+            aria-invalid={Boolean(fieldErrors.precio)}
+            aria-describedby={
+              fieldErrors.precio ? "precio-error" : undefined
+            }
             className="w-full rounded-lg border border-gray-300 px-4 py-2.5 outline-none focus:border-sky-500"
           />
         </div>
 
         <div>
+          {fieldErrors.talle && (
+            <p
+              id="talle-error"
+              role="alert"
+              className="mb-3 rounded-lg bg-red-100 p-3 text-sm text-red-700"
+            >
+              {fieldErrors.talle}
+            </p>
+          )}
+
           <label className="mb-2 block font-medium">
             Talle
           </label>
@@ -178,6 +222,10 @@ function CreateProductPage() {
             value={formData.talle}
             onChange={handleChange}
             required
+            aria-invalid={Boolean(fieldErrors.talle)}
+            aria-describedby={
+              fieldErrors.talle ? "talle-error" : undefined
+            }
             className="w-full rounded-lg border border-gray-300 px-4 py-2.5"
           >
             <option value="">
@@ -209,6 +257,16 @@ function CreateProductPage() {
         </div>
 
         <div>
+          {fieldErrors.categoria && (
+            <p
+              id="categoria-error"
+              role="alert"
+              className="mb-3 rounded-lg bg-red-100 p-3 text-sm text-red-700"
+            >
+              {fieldErrors.categoria}
+            </p>
+          )}
+
           <label className="mb-2 block font-medium">
             Categoría
           </label>
@@ -218,6 +276,12 @@ function CreateProductPage() {
             value={formData.categoria}
             onChange={handleChange}
             required
+            aria-invalid={Boolean(fieldErrors.categoria)}
+            aria-describedby={
+              fieldErrors.categoria
+                ? "categoria-error"
+                : undefined
+            }
             disabled={
               loadingCategories ||
               categories.length === 0
@@ -244,6 +308,16 @@ function CreateProductPage() {
         </div>
 
         <div>
+          {fieldErrors.epoca && (
+            <p
+              id="epoca-error"
+              role="alert"
+              className="mb-3 rounded-lg bg-red-100 p-3 text-sm text-red-700"
+            >
+              {fieldErrors.epoca}
+            </p>
+          )}
+
           <label className="mb-2 block font-medium">
             Época
           </label>
@@ -253,6 +327,10 @@ function CreateProductPage() {
             value={formData.epoca}
             onChange={handleChange}
             required
+            aria-invalid={Boolean(fieldErrors.epoca)}
+            aria-describedby={
+              fieldErrors.epoca ? "epoca-error" : undefined
+            }
             className="w-full rounded-lg border border-gray-300 px-4 py-2.5"
           >
             <option value="">
@@ -267,6 +345,16 @@ function CreateProductPage() {
         </div>
 
         <div>
+          {fieldErrors.condicion && (
+            <p
+              id="condicion-error"
+              role="alert"
+              className="mb-3 rounded-lg bg-red-100 p-3 text-sm text-red-700"
+            >
+              {fieldErrors.condicion}
+            </p>
+          )}
+
           <label className="mb-2 block font-medium">
             Condición
           </label>
@@ -276,6 +364,12 @@ function CreateProductPage() {
             value={formData.condicion}
             onChange={handleChange}
             required
+            aria-invalid={Boolean(fieldErrors.condicion)}
+            aria-describedby={
+              fieldErrors.condicion
+                ? "condicion-error"
+                : undefined
+            }
             className="w-full rounded-lg border border-gray-300 px-4 py-2.5"
           >
             <option value="">
@@ -297,6 +391,16 @@ function CreateProductPage() {
         </div>
 
         <div>
+          {fieldErrors.estado && (
+            <p
+              id="estado-error"
+              role="alert"
+              className="mb-3 rounded-lg bg-red-100 p-3 text-sm text-red-700"
+            >
+              {fieldErrors.estado}
+            </p>
+          )}
+
           <label className="mb-2 block font-medium">
             Estado
           </label>
@@ -306,6 +410,10 @@ function CreateProductPage() {
             value={formData.estado}
             onChange={handleChange}
             required
+            aria-invalid={Boolean(fieldErrors.estado)}
+            aria-describedby={
+              fieldErrors.estado ? "estado-error" : undefined
+            }
             className="w-full rounded-lg border border-gray-300 px-4 py-2.5"
           >
             <option value="Disponible">
@@ -319,6 +427,16 @@ function CreateProductPage() {
         </div>
 
         <div>
+          {fieldErrors.descripcion && (
+            <p
+              id="descripcion-error"
+              role="alert"
+              className="mb-3 rounded-lg bg-red-100 p-3 text-sm text-red-700"
+            >
+              {fieldErrors.descripcion}
+            </p>
+          )}
+
           <label className="mb-2 block font-medium">
             Descripción
           </label>
@@ -330,6 +448,12 @@ function CreateProductPage() {
             placeholder="Escribí una descripción del producto..."
             rows="5"
             required
+            aria-invalid={Boolean(fieldErrors.descripcion)}
+            aria-describedby={
+              fieldErrors.descripcion
+                ? "descripcion-error"
+                : undefined
+            }
             className="w-full resize-y rounded-lg border border-gray-300 px-4 py-2.5 outline-none focus:border-sky-500"
           />
         </div>
@@ -337,12 +461,16 @@ function CreateProductPage() {
         <ImageManager
           images={formData.imagenes}
           onChange={handleImagesChange}
+          onUploadingChange={setImagesUploading}
+          validationError={fieldErrors.imagenes}
         />
 
         <button
           type="submit"
           disabled={
             saving ||
+            imagesUploading ||
+            !isFormValid ||
             loadingCategories ||
             categories.length === 0
           }
@@ -350,6 +478,8 @@ function CreateProductPage() {
         >
           {saving
             ? "Guardando producto..."
+            : imagesUploading
+              ? "Subiendo imágenes..."
             : "Crear producto"}
         </button>
       </form>

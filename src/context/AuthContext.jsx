@@ -1,4 +1,4 @@
-import { createContext, useContext, useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import {
   onAuthStateChanged,
   signInWithEmailAndPassword,
@@ -6,8 +6,10 @@ import {
 } from "firebase/auth";
 
 import { auth } from "../firebase/auth";
-
-const AuthContext = createContext();
+import {
+  AuthContext,
+  isAdminUser,
+} from "./authStore";
 
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
@@ -22,8 +24,19 @@ export function AuthProvider({ children }) {
     return unsubscribe;
   }, []);
 
-  const login = (email, password) => {
-    return signInWithEmailAndPassword(auth, email, password);
+  const login = async (email, password) => {
+    const credentials = await signInWithEmailAndPassword(
+      auth,
+      email,
+      password,
+    );
+
+    if (!isAdminUser(credentials.user)) {
+      await signOut(auth);
+      throw new Error("auth/unauthorized-user");
+    }
+
+    return credentials;
   };
 
   const logout = () => {
@@ -34,6 +47,7 @@ export function AuthProvider({ children }) {
     <AuthContext.Provider
       value={{
         user,
+        isAdmin: isAdminUser(user),
         loading,
         login,
         logout,
@@ -42,8 +56,4 @@ export function AuthProvider({ children }) {
       {children}
     </AuthContext.Provider>
   );
-}
-
-export function useAuth() {
-  return useContext(AuthContext);
 }

@@ -1,53 +1,54 @@
-import { FaShoppingCart } from "react-icons/fa";
+import { FaShoppingBag, FaShoppingCart } from "react-icons/fa";
 import { Link } from "react-router-dom";
 
-import { useAuth } from "../../context/AuthContext";
-import { useCart } from "../../context/CartContext";
+import { useAuth } from "../../context/authStore";
+import { useCart } from "../../context/cartStore";
 
 function Navbar() {
-  const { user } = useAuth();
+  const { isAdmin } = useAuth();
   const { cart } = useCart();
 
   return (
-    <nav className="sticky top-0 z-50 bg-neutral-950 text-white shadow-sm">
-      <div className="relative mx-auto flex min-h-16 max-w-7xl items-center justify-between px-5 sm:px-8">
-        {/* Espacio izquierdo para mantener el título centrado */}
-        <div className="w-12" />
-
-        {/* Título centrado */}
+    <nav className="sticky top-0 z-50 border-b border-white/10 bg-[#1b1917] text-white shadow-sm">
+      <div className="mx-auto flex min-h-16 max-w-[1480px] items-center justify-between gap-4 px-4 sm:min-h-18 sm:px-6 lg:px-8">
         <Link
           to="/"
-          className="absolute left-1/2 -translate-x-1/2 text-lg font-bold tracking-tight sm:text-xl"
+          className="flex min-w-0 items-center gap-2.5 font-bold tracking-tight"
         >
-          Catálogo de Ropa
+          <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[#d9a273] text-[#1b1917]">
+            <FaShoppingBag className="text-base" />
+          </span>
+
+          <span className="truncate text-base sm:text-lg">
+            Catálogo de Ropa
+          </span>
         </Link>
 
-        {/* Acciones */}
-        <div className="ml-auto flex items-center">
-          {user && (
-            <Link
-              to="/admin"
-              className="mr-5 rounded-lg px-2 py-2 text-sm font-medium text-neutral-300 transition-colors hover:text-white"
-            >
-              <span className="hidden sm:inline">
-                Panel de administración
-              </span>
+        <div className="flex shrink-0 items-center gap-2 sm:gap-3">
+          <Link
+            to={isAdmin ? "/admin" : "/login"}
+            className="rounded-full border border-white/20 px-3 py-2 text-xs font-semibold text-neutral-100 transition-colors hover:border-white/40 hover:bg-white/10 sm:px-4 sm:text-sm"
+          >
+            <span className="hidden sm:inline">
+              {isAdmin
+                ? "Panel de administración"
+                : "Administrador"}
+            </span>
 
-              <span className="sm:hidden">
-                Admin
-              </span>
-            </Link>
-          )}
+            <span className="sm:hidden">
+              Admin
+            </span>
+          </Link>
 
           <Link
             to="/carrito"
             aria-label="Ver carrito"
-            className="relative flex items-center justify-center p-2 text-white transition-transform hover:scale-105"
+            className="relative flex h-10 w-10 items-center justify-center rounded-full bg-white text-[#1b1917] transition-transform hover:scale-105"
           >
-            <FaShoppingCart className="text-2xl" />
+            <FaShoppingCart className="text-lg" />
 
             {cart.length > 0 && (
-              <span className="absolute -right-1 -top-1 flex h-5 min-w-5 items-center justify-center rounded-full bg-white px-1 text-xs font-bold text-neutral-950">
+              <span className="absolute -right-1 -top-1 flex h-5 min-w-5 items-center justify-center rounded-full bg-[#d9a273] px-1 text-xs font-bold text-[#1b1917] ring-2 ring-[#1b1917]">
                 {cart.length}
               </span>
             )}
