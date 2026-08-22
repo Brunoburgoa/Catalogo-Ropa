@@ -1,10 +1,11 @@
 import { useState } from "react";
 
-import { uploadImages } from "../../../services/cloudinaryService";
+import { uploadImage } from "../../../services/cloudinaryService";
 import { getOptimizedImageUrl } from "../../../utils/cloudinaryImage";
+import { optimizeImageForUpload } from "../../../utils/imageOptimization";
 
 const MAX_IMAGES = 6;
-const MAX_FILE_SIZE = 10 * 1024 * 1024;
+const MAX_FILE_SIZE = 25 * 1024 * 1024;
 const ALLOWED_IMAGE_TYPES = new Set([
   "image/jpeg",
   "image/png",
@@ -29,40 +30,36 @@ function ImageManager({
     }
 
     const remainingSlots = MAX_IMAGES - images.length;
+    const rejectedMessages = [];
+    const validFiles = [];
 
-    if (files.length > remainingSlots) {
-      setError(
-        `Solo podés agregar ${remainingSlots} imagen${
-          remainingSlots === 1 ? "" : "es"
-        } más.`,
-      );
+    files.forEach((file) => {
+      if (!ALLOWED_IMAGE_TYPES.has(file.type)) {
+        rejectedMessages.push(
+          `No se agregó "${file.name}": el formato no está permitido.`,
+        );
+        return;
+      }
 
-      event.target.value = "";
-      return;
-    }
+      if (file.size > MAX_FILE_SIZE) {
+        rejectedMessages.push(
+          `No se agregó "${file.name}": supera el máximo de 25 MB.`,
+        );
+        return;
+      }
 
-    const invalidFile = files.find(
-      (file) => !ALLOWED_IMAGE_TYPES.has(file.type),
-    );
+      if (validFiles.length >= remainingSlots) {
+        rejectedMessages.push(
+          `No se agregó "${file.name}": el máximo es de 6 imágenes.`,
+        );
+        return;
+      }
 
-    if (invalidFile) {
-      setError(
-        "Formato no permitido. Usá imágenes JPG, JPEG, PNG o WebP.",
-      );
+      validFiles.push(file);
+    });
 
-      event.target.value = "";
-      return;
-    }
-
-    const oversizedFile = files.find(
-      (file) => file.size > MAX_FILE_SIZE,
-    );
-
-    if (oversizedFile) {
-      setError(
-        `La imagen "${oversizedFile.name}" supera el máximo de 10 MB.`,
-      );
-
+    if (validFiles.length === 0) {
+      setError(rejectedMessages.join("\n"));
       event.target.value = "";
       return;
     }
@@ -74,9 +71,42 @@ function ImageManager({
       setUploading(true);
       onUploadingChange?.(true);
 
-      previews = files.map((file) => ({
-        file,
-        preview: URL.createObjectURL(file),
+      const optimizedItems = [];
+
+      for (const file of validFiles) {
+        try {
+          const optimizedFile = await optimizeImageForUpload(file);
+
+          if (optimizedFile.size > MAX_FILE_SIZE) {
+            rejectedMessages.push(
+              `No se agregó "${file.name}": supera los 25 MB después de optimizarla.`,
+            );
+            continue;
+          }
+
+          optimizedItems.push({
+            originalName: file.name,
+            file: optimizedFile,
+          });
+        } catch (optimizationError) {
+          console.error(
+            `Error al optimizar "${file.name}":`,
+            optimizationError,
+          );
+          rejectedMessages.push(
+            `No se agregó "${file.name}": no se pudo procesar.`,
+          );
+        }
+      }
+
+      if (optimizedItems.length === 0) {
+        setError(rejectedMessages.join("\n"));
+        return;
+      }
+
+      previews = optimizedItems.map((item) => ({
+        ...item,
+        preview: URL.createObjectURL(item.file),
       }));
 
       /*
@@ -93,7 +123,25 @@ function ImageManager({
       /*
        * Subimos las imágenes a Cloudinary.
        */
-      const uploadedUrls = await uploadImages(files);
+      const uploadResults = await Promise.allSettled(
+        optimizedItems.map((item) => uploadImage(item.file)),
+      );
+      const uploadedUrls = [];
+
+      uploadResults.forEach((result, index) => {
+        if (result.status === "fulfilled") {
+          uploadedUrls.push(result.value);
+          return;
+        }
+
+        console.error(
+          `Error al subir "${optimizedItems[index].originalName}":`,
+          result.reason,
+        );
+        rejectedMessages.push(
+          `No se pudo subir "${optimizedItems[index].originalName}". Intentá nuevamente.`,
+        );
+      });
 
       /*
        * Reemplazamos las URLs temporales por las
@@ -106,6 +154,8 @@ function ImageManager({
         ...uploadedUrls,
       ]);
 
+      setError(rejectedMessages.join("\n"));
+
       previews.forEach((item) => {
         URL.revokeObjectURL(item.preview);
       });
@@ -115,9 +165,7 @@ function ImageManager({
         error,
       );
 
-      setError(
-        "No se pudieron subir las imágenes.",
-      );
+      setError(error.message || "No se pudieron subir las imágenes.");
 
       onChange(images);
       previews.forEach((item) => {
@@ -182,8 +230,9 @@ function ImageManager({
         </label>
 
         <p className="text-sm text-gray-500">
-          Máximo 6 imágenes de hasta 10 MB cada una. Formatos JPG,
-          JPEG, PNG o WebP. La primera será la imagen principal.
+          Máximo 6 imágenes de hasta 25 MB cada una. Formatos JPG,
+          JPEG, PNG o WebP. Se optimizarán antes de subirlas y la
+          primera será la imagen principal.
         </p>
       </div>
 
@@ -266,7 +315,7 @@ function ImageManager({
             }`}
           >
             {uploading
-              ? "Subiendo imágenes..."
+              ? "Optimizando y subiendo..."
               : "Seleccionar imágenes"}
 
             <input
@@ -282,7 +331,7 @@ function ImageManager({
       </div>
 
       {error && (
-        <p className="rounded-lg bg-red-100 p-3 text-sm text-red-700">
+        <p className="whitespace-pre-line rounded-lg bg-red-100 p-3 text-sm text-red-700">
           {error}
         </p>
       )}

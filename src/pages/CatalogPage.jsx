@@ -147,17 +147,19 @@ function CatalogPage() {
 
           <div className="relative max-w-3xl">
             <p className="mb-3 text-xs font-bold uppercase tracking-[0.22em] text-[#e7bd97]">
-              Venta de garaje · Prendas únicas
+              Venta de garaje
             </p>
 
             <h1 className="text-2xl font-bold leading-tight tracking-tight sm:text-3xl lg:text-4xl">
               Ropa nueva y usada,
-              <span className="block text-[#e7bd97]">una oportunidad única.</span>
+              <span className="block text-[#e7bd97]">
+                tecnología y muebles para el hogar.
+              </span>
             </h1>
 
             <p className="mt-4 max-w-2xl text-sm leading-6 text-neutral-300 sm:text-base">
-              Cada prenda es única y está esperando una nueva historia.
-              Encontrá tu próxima favorita antes de que se vaya.
+              Encontrá productos únicos a buenos precios. Si algo te
+              gusta, aprovechalo antes de que se vaya.
             </p>
           </div>
         </header>

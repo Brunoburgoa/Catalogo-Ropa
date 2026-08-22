@@ -30,8 +30,15 @@ function CreateProductPage() {
   const [imagesUploading, setImagesUploading] =
     useState(false);
   const [error, setError] = useState("");
+  const [touchedFields, setTouchedFields] = useState({});
+  const [submitAttempted, setSubmitAttempted] = useState(false);
 
   const fieldErrors = validateProduct(formData);
+  const visibleFieldErrors = Object.fromEntries(
+    Object.entries(fieldErrors).filter(
+      ([field]) => submitAttempted || touchedFields[field],
+    ),
+  );
   const isFormValid =
     Object.keys(fieldErrors).length === 0;
 
@@ -71,6 +78,15 @@ function CreateProductPage() {
     setError("");
   };
 
+  const handleBlur = (event) => {
+    const { name } = event.target;
+
+    setTouchedFields((current) => ({
+      ...current,
+      [name]: true,
+    }));
+  };
+
   const handleImagesChange = (images) => {
     setFormData((current) => ({
       ...current,
@@ -78,12 +94,39 @@ function CreateProductPage() {
     }));
 
     setError("");
+    setTouchedFields((current) => ({
+      ...current,
+      imagenes: true,
+    }));
   };
 
   const handleSubmit = async (event) => {
     event.preventDefault();
+    setSubmitAttempted(true);
 
     if (!isFormValid || imagesUploading) {
+      const firstInvalidField = Object.keys(fieldErrors)[0];
+
+      if (firstInvalidField) {
+        requestAnimationFrame(() => {
+          const errorElement = document.getElementById(
+            `${firstInvalidField}-error`,
+          );
+          const fieldElement = document.querySelector(
+            `[name="${firstInvalidField}"]`,
+          );
+
+          errorElement?.scrollIntoView({
+            behavior: "smooth",
+            block: "center",
+          });
+
+          if (fieldElement?.type !== "file") {
+            fieldElement?.focus({ preventScroll: true });
+          }
+        });
+      }
+
       return;
     }
 
@@ -142,13 +185,13 @@ function CreateProductPage() {
         className="space-y-6 rounded-xl border bg-white p-6 shadow-sm"
       >
         <div>
-          {fieldErrors.nombre && (
+          {visibleFieldErrors.nombre && (
             <p
               id="nombre-error"
               role="alert"
               className="mb-3 rounded-lg bg-red-100 p-3 text-sm text-red-700"
             >
-              {fieldErrors.nombre}
+              {visibleFieldErrors.nombre}
             </p>
           )}
 
@@ -161,24 +204,25 @@ function CreateProductPage() {
             name="nombre"
             value={formData.nombre}
             onChange={handleChange}
+            onBlur={handleBlur}
             placeholder="Ej: Remera Adidas"
             required
-            aria-invalid={Boolean(fieldErrors.nombre)}
+            aria-invalid={Boolean(visibleFieldErrors.nombre)}
             aria-describedby={
-              fieldErrors.nombre ? "nombre-error" : undefined
+              visibleFieldErrors.nombre ? "nombre-error" : undefined
             }
             className="w-full rounded-lg border border-gray-300 px-4 py-2.5 outline-none focus:border-sky-500"
           />
         </div>
 
         <div>
-          {fieldErrors.precio && (
+          {visibleFieldErrors.precio && (
             <p
               id="precio-error"
               role="alert"
               className="mb-3 rounded-lg bg-red-100 p-3 text-sm text-red-700"
             >
-              {fieldErrors.precio}
+              {visibleFieldErrors.precio}
             </p>
           )}
 
@@ -191,25 +235,26 @@ function CreateProductPage() {
             name="precio"
             value={formData.precio}
             onChange={handleChange}
+            onBlur={handleBlur}
             placeholder="Ej: 18000"
             min="0"
             required
-            aria-invalid={Boolean(fieldErrors.precio)}
+            aria-invalid={Boolean(visibleFieldErrors.precio)}
             aria-describedby={
-              fieldErrors.precio ? "precio-error" : undefined
+              visibleFieldErrors.precio ? "precio-error" : undefined
             }
             className="w-full rounded-lg border border-gray-300 px-4 py-2.5 outline-none focus:border-sky-500"
           />
         </div>
 
         <div>
-          {fieldErrors.talle && (
+          {visibleFieldErrors.talle && (
             <p
               id="talle-error"
               role="alert"
               className="mb-3 rounded-lg bg-red-100 p-3 text-sm text-red-700"
             >
-              {fieldErrors.talle}
+              {visibleFieldErrors.talle}
             </p>
           )}
 
@@ -221,10 +266,11 @@ function CreateProductPage() {
             name="talle"
             value={formData.talle}
             onChange={handleChange}
+            onBlur={handleBlur}
             required
-            aria-invalid={Boolean(fieldErrors.talle)}
+            aria-invalid={Boolean(visibleFieldErrors.talle)}
             aria-describedby={
-              fieldErrors.talle ? "talle-error" : undefined
+              visibleFieldErrors.talle ? "talle-error" : undefined
             }
             className="w-full rounded-lg border border-gray-300 px-4 py-2.5"
           >
@@ -257,13 +303,13 @@ function CreateProductPage() {
         </div>
 
         <div>
-          {fieldErrors.categoria && (
+          {visibleFieldErrors.categoria && (
             <p
               id="categoria-error"
               role="alert"
               className="mb-3 rounded-lg bg-red-100 p-3 text-sm text-red-700"
             >
-              {fieldErrors.categoria}
+              {visibleFieldErrors.categoria}
             </p>
           )}
 
@@ -275,10 +321,11 @@ function CreateProductPage() {
             name="categoria"
             value={formData.categoria}
             onChange={handleChange}
+            onBlur={handleBlur}
             required
-            aria-invalid={Boolean(fieldErrors.categoria)}
+            aria-invalid={Boolean(visibleFieldErrors.categoria)}
             aria-describedby={
-              fieldErrors.categoria
+              visibleFieldErrors.categoria
                 ? "categoria-error"
                 : undefined
             }
@@ -308,13 +355,13 @@ function CreateProductPage() {
         </div>
 
         <div>
-          {fieldErrors.epoca && (
+          {visibleFieldErrors.epoca && (
             <p
               id="epoca-error"
               role="alert"
               className="mb-3 rounded-lg bg-red-100 p-3 text-sm text-red-700"
             >
-              {fieldErrors.epoca}
+              {visibleFieldErrors.epoca}
             </p>
           )}
 
@@ -326,10 +373,11 @@ function CreateProductPage() {
             name="epoca"
             value={formData.epoca}
             onChange={handleChange}
+            onBlur={handleBlur}
             required
-            aria-invalid={Boolean(fieldErrors.epoca)}
+            aria-invalid={Boolean(visibleFieldErrors.epoca)}
             aria-describedby={
-              fieldErrors.epoca ? "epoca-error" : undefined
+              visibleFieldErrors.epoca ? "epoca-error" : undefined
             }
             className="w-full rounded-lg border border-gray-300 px-4 py-2.5"
           >
@@ -345,13 +393,13 @@ function CreateProductPage() {
         </div>
 
         <div>
-          {fieldErrors.condicion && (
+          {visibleFieldErrors.condicion && (
             <p
               id="condicion-error"
               role="alert"
               className="mb-3 rounded-lg bg-red-100 p-3 text-sm text-red-700"
             >
-              {fieldErrors.condicion}
+              {visibleFieldErrors.condicion}
             </p>
           )}
 
@@ -363,10 +411,11 @@ function CreateProductPage() {
             name="condicion"
             value={formData.condicion}
             onChange={handleChange}
+            onBlur={handleBlur}
             required
-            aria-invalid={Boolean(fieldErrors.condicion)}
+            aria-invalid={Boolean(visibleFieldErrors.condicion)}
             aria-describedby={
-              fieldErrors.condicion
+              visibleFieldErrors.condicion
                 ? "condicion-error"
                 : undefined
             }
@@ -391,13 +440,13 @@ function CreateProductPage() {
         </div>
 
         <div>
-          {fieldErrors.estado && (
+          {visibleFieldErrors.estado && (
             <p
               id="estado-error"
               role="alert"
               className="mb-3 rounded-lg bg-red-100 p-3 text-sm text-red-700"
             >
-              {fieldErrors.estado}
+              {visibleFieldErrors.estado}
             </p>
           )}
 
@@ -409,10 +458,11 @@ function CreateProductPage() {
             name="estado"
             value={formData.estado}
             onChange={handleChange}
+            onBlur={handleBlur}
             required
-            aria-invalid={Boolean(fieldErrors.estado)}
+            aria-invalid={Boolean(visibleFieldErrors.estado)}
             aria-describedby={
-              fieldErrors.estado ? "estado-error" : undefined
+              visibleFieldErrors.estado ? "estado-error" : undefined
             }
             className="w-full rounded-lg border border-gray-300 px-4 py-2.5"
           >
@@ -427,13 +477,13 @@ function CreateProductPage() {
         </div>
 
         <div>
-          {fieldErrors.descripcion && (
+          {visibleFieldErrors.descripcion && (
             <p
               id="descripcion-error"
               role="alert"
               className="mb-3 rounded-lg bg-red-100 p-3 text-sm text-red-700"
             >
-              {fieldErrors.descripcion}
+              {visibleFieldErrors.descripcion}
             </p>
           )}
 
@@ -445,12 +495,13 @@ function CreateProductPage() {
             name="descripcion"
             value={formData.descripcion}
             onChange={handleChange}
+            onBlur={handleBlur}
             placeholder="Escribí una descripción del producto..."
             rows="5"
             required
-            aria-invalid={Boolean(fieldErrors.descripcion)}
+            aria-invalid={Boolean(visibleFieldErrors.descripcion)}
             aria-describedby={
-              fieldErrors.descripcion
+              visibleFieldErrors.descripcion
                 ? "descripcion-error"
                 : undefined
             }
@@ -462,7 +513,7 @@ function CreateProductPage() {
           images={formData.imagenes}
           onChange={handleImagesChange}
           onUploadingChange={setImagesUploading}
-          validationError={fieldErrors.imagenes}
+          validationError={visibleFieldErrors.imagenes}
         />
 
         <button
@@ -470,7 +521,6 @@ function CreateProductPage() {
           disabled={
             saving ||
             imagesUploading ||
-            !isFormValid ||
             loadingCategories ||
             categories.length === 0
           }
