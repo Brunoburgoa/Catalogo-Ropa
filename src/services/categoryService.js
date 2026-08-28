@@ -22,6 +22,7 @@ export async function getCategories() {
   return snapshot.docs
     .map((doc) => ({
       id: doc.id,
+      categoriaPadre: "",
       ...doc.data(),
     }))
     .sort((a, b) =>
@@ -29,9 +30,13 @@ export async function getCategories() {
     );
 }
 
-export async function createCategory(nombre) {
+export async function createCategory(
+  nombre,
+  categoriaPadre = "",
+) {
   const category = {
     nombre: nombre.trim(),
+    categoriaPadre,
     fechaCreacion: serverTimestamp(),
   };
 
@@ -44,19 +49,49 @@ export async function createCategory(nombre) {
 }
 
 export async function deleteCategory(
-  categoryId,
-  categoryName,
+  category,
 ) {
-  const productsQuery = query(
-    collection(db, "products"),
-    where("categoria", "==", categoryName),
+  const childCategoriesQuery = query(
+    categoriesCollection,
+    where("categoriaPadre", "==", category.id),
   );
 
-  const productsSnapshot = await getDocs(
-    productsQuery,
+  const childCategoriesSnapshot = await getDocs(
+    childCategoriesQuery,
   );
 
-  if (!productsSnapshot.empty) {
+  if (!childCategoriesSnapshot.empty) {
+    throw new Error(
+      "No se puede eliminar una categoría principal que todavía tiene subcategorías.",
+    );
+  }
+
+  const productsCollection = collection(db, "products");
+  const usageQueries = category.categoriaPadre
+    ? [
+        query(
+          productsCollection,
+          where("subcategoriaId", "==", category.id),
+        ),
+      ]
+    : [
+        query(
+          productsCollection,
+          where("categoriaId", "==", category.id),
+        ),
+        query(
+          productsCollection,
+          where("categoria", "==", category.nombre),
+        ),
+      ];
+
+  const usageSnapshots = await Promise.all(
+    usageQueries.map((productsQuery) =>
+      getDocs(productsQuery),
+    ),
+  );
+
+  if (usageSnapshots.some((snapshot) => !snapshot.empty)) {
     throw new Error(
       "No se puede eliminar una categoría que está siendo utilizada por un producto.",
     );
@@ -65,7 +100,7 @@ export async function deleteCategory(
   const categoryRef = doc(
     db,
     "categories",
-    categoryId,
+    category.id,
   );
 
   await deleteDoc(categoryRef);

@@ -7,35 +7,30 @@ import {
 } from "../../../services/categoryService";
 
 function CategoryManager() {
-  const [categories, setCategories] =
-    useState([]);
+  const [categories, setCategories] = useState([]);
+  const [newCategory, setNewCategory] = useState("");
+  const [parentCategoryId, setParentCategoryId] = useState("");
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState("");
 
-  const [newCategory, setNewCategory] =
-    useState("");
+  const mainCategories = categories.filter(
+    (category) => !category.categoriaPadre,
+  );
 
-  const [loading, setLoading] =
-    useState(true);
-
-  const [saving, setSaving] =
-    useState(false);
-
-  const [error, setError] =
-    useState("");
+  const getParentName = (category) =>
+    categories.find(
+      (item) => item.id === category.categoriaPadre,
+    )?.nombre || "Categoría principal no disponible";
 
   const loadCategories = async () => {
     try {
+      setError("");
       const data = await getCategories();
-
       setCategories(data);
-    } catch (error) {
-      console.error(
-        "Error al cargar categorías:",
-        error,
-      );
-
-      setError(
-        "No se pudieron cargar las categorías.",
-      );
+    } catch (loadError) {
+      console.error("Error al cargar categorías:", loadError);
+      setError("No se pudieron cargar las categorías.");
     } finally {
       setLoading(false);
     }
@@ -50,16 +45,11 @@ function CategoryManager() {
           setCategories(data);
         }
       })
-      .catch((error) => {
-        console.error(
-          "Error al cargar categorÃ­as:",
-          error,
-        );
+      .catch((loadError) => {
+        console.error("Error al cargar categorías:", loadError);
 
         if (isActive) {
-          setError(
-            "No se pudieron cargar las categorÃ­as.",
-          );
+          setError("No se pudieron cargar las categorías.");
         }
       })
       .finally(() => {
@@ -73,69 +63,54 @@ function CategoryManager() {
     };
   }, []);
 
-  const handleCreateCategory = async (
-    event,
-  ) => {
+  const handleCreateCategory = async (event) => {
     event.preventDefault();
 
-    const categoryName =
-      newCategory.trim();
+    const categoryName = newCategory.trim();
 
     if (!categoryName) {
-      setError(
-        "Ingresá un nombre para la categoría.",
-      );
-
+      setError("Ingresá un nombre para la categoría.");
       return;
     }
 
-    const alreadyExists =
-      categories.some(
-        (category) =>
-          category.nombre.toLowerCase() ===
-          categoryName.toLowerCase(),
-      );
+    const alreadyExists = categories.some(
+      (category) =>
+        category.nombre.toLowerCase() ===
+          categoryName.toLowerCase() &&
+        category.categoriaPadre === parentCategoryId,
+    );
 
     if (alreadyExists) {
       setError(
-        "Esa categoría ya existe.",
+        parentCategoryId
+          ? "Esa subcategoría ya existe dentro de la categoría seleccionada."
+          : "Esa categoría principal ya existe.",
       );
-
       return;
     }
 
     try {
       setSaving(true);
       setError("");
-
-      await createCategory(
-        categoryName,
-      );
-
+      await createCategory(categoryName, parentCategoryId);
       setNewCategory("");
-
+      setParentCategoryId("");
       await loadCategories();
-    } catch (error) {
-      console.error(
-        "Error al crear categoría:",
-        error,
-      );
-
-      setError(
-        "No se pudo crear la categoría.",
-      );
+    } catch (createError) {
+      console.error("Error al crear categoría:", createError);
+      setError("No se pudo crear la categoría.");
     } finally {
       setSaving(false);
     }
   };
 
-  const handleDeleteCategory = async (
-    category,
-  ) => {
-    const confirmed =
-      window.confirm(
-        `¿Seguro que querés eliminar la categoría "${category.nombre}"?`,
-      );
+  const handleDeleteCategory = async (category) => {
+    const categoryType = category.categoriaPadre
+      ? "subcategoría"
+      : "categoría principal";
+    const confirmed = window.confirm(
+      `¿Seguro que querés eliminar la ${categoryType} "${category.nombre}"?`,
+    );
 
     if (!confirmed) {
       return;
@@ -143,26 +118,14 @@ function CategoryManager() {
 
     try {
       setError("");
-
-      await deleteCategory(
-        category.id,
-        category.nombre,
-      );
-
+      await deleteCategory(category);
       setCategories((current) =>
-        current.filter(
-          (item) =>
-            item.id !== category.id,
-        ),
+        current.filter((item) => item.id !== category.id),
       );
-    } catch (error) {
-      console.error(
-        "Error al eliminar categoría:",
-        error,
-      );
-
+    } catch (deleteError) {
+      console.error("Error al eliminar categoría:", deleteError);
       setError(
-        error.message ||
+        deleteError.message ||
           "No se pudo eliminar la categoría.",
       );
     }
@@ -176,7 +139,8 @@ function CategoryManager() {
         </h3>
 
         <p className="mt-1 text-sm text-neutral-500">
-          Administrá las categorías utilizadas por las publicaciones.
+          Creá categorías principales o elegí una categoría padre
+          para agregar una subcategoría.
         </p>
       </div>
 
@@ -187,31 +151,57 @@ function CategoryManager() {
       )}
 
       <form
-        onSubmit={
-          handleCreateCategory
-        }
-        className="flex flex-col gap-3 sm:flex-row"
+        onSubmit={handleCreateCategory}
+        className="grid gap-3 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_auto]"
       >
-        <input
-          type="text"
-          value={newCategory}
-          onChange={(event) =>
-            setNewCategory(
-              event.target.value,
-            )
-          }
-          placeholder="Nombre de la nueva categoría"
-          className="min-w-0 flex-1 rounded-xl border border-neutral-300 bg-neutral-50 px-4 py-3 text-sm text-neutral-900 outline-none transition focus:border-neutral-900 focus:bg-white"
-        />
+        <label className="min-w-0">
+          <span className="mb-2 block text-sm font-semibold text-neutral-700">
+            Nombre
+          </span>
+
+          <input
+            type="text"
+            value={newCategory}
+            onChange={(event) => {
+              setNewCategory(event.target.value);
+              setError("");
+            }}
+            placeholder="Ej: Ropa o Remeras"
+            className="w-full rounded-xl border border-neutral-300 bg-neutral-50 px-4 py-3 text-sm text-neutral-900 outline-none transition focus:border-neutral-900 focus:bg-white"
+          />
+        </label>
+
+        <label className="min-w-0">
+          <span className="mb-2 block text-sm font-semibold text-neutral-700">
+            Categoría padre
+          </span>
+
+          <select
+            value={parentCategoryId}
+            onChange={(event) => {
+              setParentCategoryId(event.target.value);
+              setError("");
+            }}
+            className="w-full rounded-xl border border-neutral-300 bg-neutral-50 px-4 py-3 text-sm text-neutral-900 outline-none transition focus:border-neutral-900 focus:bg-white"
+          >
+            <option value="">
+              Ninguna (será categoría principal)
+            </option>
+
+            {mainCategories.map((category) => (
+              <option key={category.id} value={category.id}>
+                {category.nombre}
+              </option>
+            ))}
+          </select>
+        </label>
 
         <button
           type="submit"
           disabled={saving}
-          className="rounded-xl bg-sky-600 px-5 py-3 text-sm font-semibold text-white transition-colors hover:bg-sky-700 disabled:cursor-not-allowed disabled:opacity-50"
+          className="self-end rounded-xl bg-sky-600 px-5 py-3 text-sm font-semibold text-white transition-colors hover:bg-sky-700 disabled:cursor-not-allowed disabled:opacity-50"
         >
-          {saving
-            ? "Guardando..."
-            : "Agregar categoría"}
+          {saving ? "Guardando..." : "Agregar categoría"}
         </button>
       </form>
 
@@ -226,30 +216,32 @@ function CategoryManager() {
           </div>
         ) : (
           <div className="grid gap-2 sm:grid-cols-2">
-            {categories.map(
-              (category) => (
-                <div
-                  key={category.id}
-                  className="flex items-center justify-between gap-3 rounded-xl border border-neutral-200 px-4 py-3"
-                >
-                  <span className="font-medium text-neutral-900">
+            {categories.map((category) => (
+              <div
+                key={category.id}
+                className="flex items-center justify-between gap-3 rounded-xl border border-neutral-200 px-4 py-3"
+              >
+                <div className="min-w-0">
+                  <span className="block truncate font-medium text-neutral-900">
                     {category.nombre}
                   </span>
 
-                  <button
-                    type="button"
-                    onClick={() =>
-                      handleDeleteCategory(
-                        category,
-                      )
-                    }
-                    className="rounded-xl border border-red-200 px-4 py-2.5 text-xs font-semibold text-red-600 transition-colors hover:bg-red-50"
-                  >
-                    Eliminar
-                  </button>
+                  <span className="mt-1 block text-xs text-neutral-500">
+                    {category.categoriaPadre
+                      ? `Subcategoría de ${getParentName(category)}`
+                      : "Categoría principal"}
+                  </span>
                 </div>
-              ),
-            )}
+
+                <button
+                  type="button"
+                  onClick={() => handleDeleteCategory(category)}
+                  className="shrink-0 rounded-xl border border-red-200 px-4 py-2.5 text-xs font-semibold text-red-600 transition-colors hover:bg-red-50"
+                >
+                  Eliminar
+                </button>
+              </div>
+            ))}
           </div>
         )}
       </div>

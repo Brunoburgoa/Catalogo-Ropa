@@ -193,10 +193,6 @@ function AdminPage() {
                   </th>
 
                   <th className="px-6 py-4 font-semibold text-neutral-600">
-                    Talle
-                  </th>
-
-                  <th className="px-6 py-4 font-semibold text-neutral-600">
                     Estado
                   </th>
 
@@ -214,7 +210,7 @@ function AdminPage() {
                 {loading ? (
                   <tr>
                     <td
-                      colSpan="6"
+                      colSpan="5"
                       className="px-6 py-12 text-center text-neutral-500"
                     >
                       Cargando productos...
@@ -224,7 +220,7 @@ function AdminPage() {
                   0 ? (
                   <tr>
                     <td
-                      colSpan="6"
+                      colSpan="5"
                       className="px-6 py-12 text-center"
                     >
                       <p className="font-semibold text-neutral-900">
@@ -248,7 +244,9 @@ function AdminPage() {
                         </div>
 
                         <div className="mt-1 text-xs text-neutral-400">
-                          {product.categoria}
+                          {[product.categoria, product.subcategoria]
+                            .filter(Boolean)
+                            .join(" · ")}
                         </div>
                       </td>
 
@@ -259,10 +257,6 @@ function AdminPage() {
                         ).toLocaleString(
                           "es-AR",
                         )}
-                      </td>
-
-                      <td className="px-6 py-4 text-neutral-600">
-                        {product.talle}
                       </td>
 
                       <td className="px-6 py-4">

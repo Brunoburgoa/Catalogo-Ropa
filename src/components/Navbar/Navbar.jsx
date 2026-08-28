@@ -20,7 +20,7 @@ function Navbar() {
           </span>
 
           <span className="truncate text-base sm:text-lg">
-            Catálogo de Ropa
+            Venta de Garaje
           </span>
         </Link>
 

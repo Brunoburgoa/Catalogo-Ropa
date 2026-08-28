@@ -6,6 +6,7 @@ import ProductGrid from "../components/ProductGrid/ProductGrid";
 
 import { getProducts } from "../services/productService";
 import { getCategories } from "../services/categoryService";
+import { isClothingCategory } from "../utils/category";
 
 function CatalogPage() {
   const [products, setProducts] = useState([]);
@@ -13,9 +14,9 @@ function CatalogPage() {
 
   const [search, setSearch] = useState("");
   const [category, setCategory] = useState("");
+  const [subcategory, setSubcategory] = useState("");
+  const [season, setSeason] = useState("");
   const [condition, setCondition] = useState("");
-  const [epoca, setEpoca] = useState("");
-  const [talle, setTalle] = useState("");
   const [sort, setSort] = useState("");
 
   const [loading, setLoading] = useState(true);
@@ -52,6 +53,24 @@ function CatalogPage() {
     loadCatalogData();
   }, []);
 
+  const mainCategories = categories.filter(
+    (item) => !item.categoriaPadre,
+  );
+  const availableSubcategories = category
+    ? categories.filter(
+        (item) => item.categoriaPadre === category,
+      )
+    : [];
+  const selectedCategory = mainCategories.find(
+    (item) => item.id === category,
+  );
+  const showSeasonFilter = isClothingCategory(
+    selectedCategory?.nombre,
+  );
+  const selectedSubcategory = availableSubcategories.find(
+    (item) => item.id === subcategory,
+  );
+
   const filteredProducts = products
     .filter((product) => {
       if (product.visible === false) {
@@ -64,26 +83,29 @@ function CatalogPage() {
 
       const matchesCategory =
         category === "" ||
-        product.categoria === category;
+        (product.categoriaId
+          ? product.categoriaId === category
+          : product.categoria === selectedCategory?.nombre);
 
-      const matchesSize =
-        talle === "" ||
-        product.talle === talle;
+      const matchesSubcategory =
+        subcategory === "" ||
+        (product.subcategoriaId
+          ? product.subcategoriaId === subcategory
+          : product.subcategoria === selectedSubcategory?.nombre);
+
+      const matchesSeason =
+        season === "" || product.temporada === season;
 
       const matchesCondition =
         condition === "" ||
         product.condicion === condition;
 
-      const matchesEpoca =
-        epoca === "" ||
-        product.epoca === epoca;
-
       return (
         matchesSearch &&
         matchesCategory &&
-        matchesSize &&
-        matchesCondition &&
-        matchesEpoca
+        matchesSubcategory &&
+        matchesSeason &&
+        matchesCondition
       );
     })
     .sort((a, b) => {
@@ -121,18 +143,18 @@ function CatalogPage() {
   const activeFilterCount = [
     search,
     category,
+    subcategory,
+    season,
     condition,
-    epoca,
-    talle,
     sort,
   ].filter(Boolean).length;
 
   const clearFilters = () => {
     setSearch("");
     setCategory("");
+    setSubcategory("");
+    setSeason("");
     setCondition("");
-    setEpoca("");
-    setTalle("");
     setSort("");
   };
 
@@ -165,17 +187,19 @@ function CatalogPage() {
         </header>
 
         <CatalogToolbar
-          categories={categories}
+          categories={mainCategories}
           search={search}
           setSearch={setSearch}
           category={category}
           setCategory={setCategory}
+          subcategories={availableSubcategories}
+          subcategory={subcategory}
+          setSubcategory={setSubcategory}
+          season={season}
+          setSeason={setSeason}
+          showSeason={showSeasonFilter}
           condition={condition}
           setCondition={setCondition}
-          season={epoca}
-          setSeason={setEpoca}
-          size={talle}
-          setSize={setTalle}
           sort={sort}
           setSort={setSort}
           resultsCount={filteredProducts.length}

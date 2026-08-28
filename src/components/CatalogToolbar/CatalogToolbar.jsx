@@ -7,12 +7,14 @@ function CatalogToolbar({
   setSearch,
   category,
   setCategory,
-  size,
-  setSize,
-  condition,
-  setCondition,
+  subcategories,
+  subcategory,
+  setSubcategory,
   season,
   setSeason,
+  showSeason,
+  condition,
+  setCondition,
   sort,
   setSort,
   resultsCount,
@@ -32,7 +34,7 @@ function CatalogToolbar({
           className="block min-w-0 flex-1"
         >
           <span className="mb-2 block text-sm font-semibold text-neutral-800">
-            Buscar prendas
+            Buscar productos
           </span>
 
           <span className="relative block">
@@ -41,7 +43,7 @@ function CatalogToolbar({
             <input
               id="catalog-search"
               type="text"
-              placeholder="Ej: remera, jean, campera..."
+              placeholder="Ej: campera, celular, mesa..."
               value={search}
               onChange={(event) =>
                 setSearch(event.target.value)
@@ -71,24 +73,28 @@ function CatalogToolbar({
 
       <div
         id="catalog-filters"
-        className={`mt-4 gap-3 sm:grid sm:grid-cols-2 lg:grid-cols-5 ${
+        className={`mt-4 gap-3 sm:grid sm:grid-cols-2 ${
+          showSeason ? "lg:grid-cols-5" : "lg:grid-cols-4"
+        } ${
           filtersOpen ? "grid" : "hidden"
         }`}
       >
         <select
-          aria-label="Filtrar por categoría"
+          aria-label="Filtrar por categoría principal"
           value={category}
-          onChange={(event) =>
-            setCategory(event.target.value)
-          }
+          onChange={(event) => {
+            setCategory(event.target.value);
+            setSubcategory("");
+            setSeason("");
+          }}
           className={selectClassName}
         >
-          <option value="">Todas las categorías</option>
+          <option value="">Todas las categorías principales</option>
 
           {categories.map((item) => (
             <option
               key={item.id}
-              value={item.nombre}
+              value={item.id}
             >
               {item.nombre}
             </option>
@@ -96,35 +102,43 @@ function CatalogToolbar({
         </select>
 
         <select
-          aria-label="Filtrar por talle"
-          value={size}
+          aria-label="Filtrar por subcategoría"
+          value={subcategory}
           onChange={(event) =>
-            setSize(event.target.value)
+            setSubcategory(event.target.value)
           }
+          disabled={!category}
+          className={`${selectClassName} disabled:cursor-not-allowed disabled:bg-neutral-100 disabled:text-neutral-400`}
+        >
+          <option value="">
+            {!category
+              ? "Elegí una categoría primero"
+              : subcategories.length === 0
+                ? "Sin subcategorías"
+                : "Todas las subcategorías"}
+          </option>
+
+          {subcategories.map((item) => (
+            <option key={item.id} value={item.id}>
+              {item.nombre}
+            </option>
+          ))}
+        </select>
+
+        {showSeason && (
+        <select
+          aria-label="Filtrar por temporada"
+          value={season}
+          onChange={(event) => setSeason(event.target.value)}
           className={selectClassName}
         >
-          <option value="">Todos los talles</option>
-          <option value="XS">XS</option>
-          <option value="S">S</option>
-          <option value="M">M</option>
-          <option value="L">L</option>
-          <option value="XL">XL</option>
-          <option value="XXL">XXL</option>
-          <option value="Único">Único</option>
-          <option value="36">36</option>
-          <option value="38">38</option>
-          <option value="40">40</option>
-          <option value="42">42</option>
-          <option value="44">44</option>
-          <option value="46">46</option>
-          <option value="48">48</option>
-          <option value="50">50</option>
-          <option value="52">52</option>
-          <option value="54">54</option>
-          <option value="56">56</option>
-          <option value="58">58</option>
-          <option value="60">60</option>
+          <option value="">Todas las temporadas</option>
+          <option value="Verano">Verano</option>
+          <option value="Otoño">Otoño</option>
+          <option value="Invierno">Invierno</option>
+          <option value="Primavera">Primavera</option>
         </select>
+        )}
 
         <select
           aria-label="Filtrar por condición"
@@ -135,22 +149,9 @@ function CatalogToolbar({
           className={selectClassName}
         >
           <option value="">Todas las condiciones</option>
-          <option value="Como nueva">Como nueva</option>
+          <option value="Excelente estado">Excelente estado</option>
           <option value="Muy buen estado">Muy buen estado</option>
           <option value="Buen estado">Buen estado</option>
-        </select>
-
-        <select
-          aria-label="Filtrar por época"
-          value={season}
-          onChange={(event) =>
-            setSeason(event.target.value)
-          }
-          className={selectClassName}
-        >
-          <option value="">Todas las épocas</option>
-          <option value="Verano">Verano</option>
-          <option value="Invierno">Invierno</option>
         </select>
 
         <select
@@ -172,7 +173,9 @@ function CatalogToolbar({
           <span className="font-semibold text-neutral-900">
             {resultsCount}
           </span>{" "}
-          {resultsCount === 1 ? "prenda encontrada" : "prendas encontradas"}
+          {resultsCount === 1
+            ? "producto encontrado"
+            : "productos encontrados"}
         </p>
 
         {activeFilterCount > 0 && (

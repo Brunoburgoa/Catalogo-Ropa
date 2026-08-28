@@ -26,7 +26,7 @@ function CartPage() {
       .join("\n");
 
     const message =
-      `Hola! Quería consultar por estas prendas:\n\n` +
+      `Hola! Quería consultar por estos productos:\n\n` +
       `${productsMessage}\n\n` +
       `Total: $${total.toLocaleString("es-AR")}\n\n` +
       `¿Siguen disponibles?`;
@@ -55,7 +55,7 @@ function CartPage() {
             </h1>
 
             <p className="mt-2 text-sm leading-relaxed text-neutral-500">
-              Agregá algunas prendas desde el catálogo
+              Agregá algunos productos desde el catálogo
               para realizar tu consulta.
             </p>
 
@@ -140,10 +140,6 @@ function CartPage() {
                   </h2>
 
                   <div className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-sm text-neutral-500">
-                    <span>
-                      Talle: {product.talle}
-                    </span>
-
                     <span>
                       {product.condicion}
                     </span>

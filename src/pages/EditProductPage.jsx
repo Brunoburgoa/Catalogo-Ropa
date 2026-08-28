@@ -11,6 +11,7 @@ import {
 } from "../services/categoryService";
 
 import ImageManager from "../components/admin/ImageManager/ImageManager";
+import { isClothingCategory } from "../utils/category";
 import { validateProduct } from "../utils/productValidation";
 
 function EditProductPage() {
@@ -20,9 +21,11 @@ function EditProductPage() {
   const [formData, setFormData] = useState({
     nombre: "",
     precio: "",
-    talle: "",
+    categoriaId: "",
     categoria: "",
-    epoca: "",
+    subcategoriaId: "",
+    subcategoria: "",
+    temporada: "",
     condicion: "",
     estado: "Disponible",
     descripcion: "",
@@ -43,7 +46,21 @@ function EditProductPage() {
   const [loadError, setLoadError] = useState("");
   const [formError, setFormError] = useState("");
 
-  const fieldErrors = validateProduct(formData);
+  const mainCategories = categories.filter(
+    (category) => !category.categoriaPadre,
+  );
+  const availableSubcategories = formData.categoriaId
+    ? categories.filter(
+        (category) =>
+          category.categoriaPadre === formData.categoriaId,
+      )
+    : [];
+  const requiresSeason = isClothingCategory(formData.categoria);
+
+  const fieldErrors = validateProduct(formData, {
+    requireSubcategory: availableSubcategories.length > 0,
+    requireSeason: requiresSeason,
+  });
   const isFormValid =
     Object.keys(fieldErrors).length === 0;
 
@@ -66,12 +83,33 @@ function EditProductPage() {
           return;
         }
 
+        const selectedMainCategory = categoryData.find(
+          (category) =>
+            !category.categoriaPadre &&
+            (category.id === product.categoriaId ||
+              category.nombre === product.categoria),
+        );
+        const selectedSubcategory = categoryData.find(
+          (category) =>
+            category.categoriaPadre === selectedMainCategory?.id &&
+            (category.id === product.subcategoriaId ||
+              category.nombre === product.subcategoria),
+        );
+
         setFormData({
           nombre: product.nombre || "",
           precio: product.precio || "",
-          talle: product.talle || "",
-          categoria: product.categoria || "",
-          epoca: product.epoca || "",
+          categoriaId: selectedMainCategory?.id || "",
+          categoria:
+            selectedMainCategory?.nombre ||
+            product.categoria ||
+            "",
+          subcategoriaId: selectedSubcategory?.id || "",
+          subcategoria:
+            selectedSubcategory?.nombre ||
+            product.subcategoria ||
+            "",
+          temporada: product.temporada || "",
           condicion: product.condicion || "",
           estado:
             product.estado || "Disponible",
@@ -156,6 +194,37 @@ function EditProductPage() {
     } finally {
       setSaving(false);
     }
+  };
+
+  const handleCategoryChange = (event) => {
+    const selectedCategory = mainCategories.find(
+      (category) => category.id === event.target.value,
+    );
+
+    setFormData((current) => ({
+      ...current,
+      categoriaId: selectedCategory?.id || "",
+      categoria: selectedCategory?.nombre || "",
+      subcategoriaId: "",
+      subcategoria: "",
+      temporada: isClothingCategory(selectedCategory?.nombre)
+        ? current.temporada
+        : "",
+    }));
+    setFormError("");
+  };
+
+  const handleSubcategoryChange = (event) => {
+    const selectedSubcategory = availableSubcategories.find(
+      (category) => category.id === event.target.value,
+    );
+
+    setFormData((current) => ({
+      ...current,
+      subcategoriaId: selectedSubcategory?.id || "",
+      subcategoria: selectedSubcategory?.nombre || "",
+    }));
+    setFormError("");
   };
 
   const handleCancel = () => {
@@ -243,6 +312,7 @@ function EditProductPage() {
             name="nombre"
             value={formData.nombre}
             onChange={handleChange}
+            placeholder="Ej: campera, celular, mesa..."
             required
             aria-invalid={Boolean(fieldErrors.nombre)}
             aria-describedby={
@@ -283,103 +353,49 @@ function EditProductPage() {
         </div>
 
         <div>
-          {fieldErrors.talle && (
+          {fieldErrors.categoriaId && (
             <p
-              id="talle-error"
+              id="categoriaId-error"
               role="alert"
               className="mb-3 rounded-lg bg-red-100 p-3 text-sm text-red-700"
             >
-              {fieldErrors.talle}
+              {fieldErrors.categoriaId}
             </p>
           )}
 
           <label className="mb-2 block font-medium">
-            Talle
+            Categoría principal
           </label>
 
           <select
-            name="talle"
-            value={formData.talle}
-            onChange={handleChange}
+            name="categoriaId"
+            value={formData.categoriaId}
+            onChange={handleCategoryChange}
             required
-            aria-invalid={Boolean(fieldErrors.talle)}
+            aria-invalid={Boolean(fieldErrors.categoriaId)}
             aria-describedby={
-              fieldErrors.talle ? "talle-error" : undefined
-            }
-            className="w-full rounded-lg border border-gray-300 px-4 py-2.5"
-          >
-            <option value="">
-              Seleccionar talle
-            </option>
-
-            <option value="XS">XS</option>
-            <option value="S">S</option>
-            <option value="M">M</option>
-            <option value="L">L</option>
-            <option value="XL">XL</option>
-            <option value="XXL">XXL</option>
-            <option value="Único">Único</option>
-
-            <option value="36">36</option>
-            <option value="38">38</option>
-            <option value="40">40</option>
-            <option value="42">42</option>
-            <option value="44">44</option>
-            <option value="46">46</option>
-            <option value="48">48</option>
-            <option value="50">50</option>
-            <option value="52">52</option>
-            <option value="54">54</option>
-            <option value="56">56</option>
-            <option value="58">58</option>
-            <option value="60">60</option>
-          </select>
-        </div>
-
-        <div>
-          {fieldErrors.categoria && (
-            <p
-              id="categoria-error"
-              role="alert"
-              className="mb-3 rounded-lg bg-red-100 p-3 text-sm text-red-700"
-            >
-              {fieldErrors.categoria}
-            </p>
-          )}
-
-          <label className="mb-2 block font-medium">
-            Categoría
-          </label>
-
-          <select
-            name="categoria"
-            value={formData.categoria}
-            onChange={handleChange}
-            required
-            aria-invalid={Boolean(fieldErrors.categoria)}
-            aria-describedby={
-              fieldErrors.categoria
-                ? "categoria-error"
+              fieldErrors.categoriaId
+                ? "categoriaId-error"
                 : undefined
             }
             disabled={
               loadingCategories ||
-              categories.length === 0
+              mainCategories.length === 0
             }
             className="w-full rounded-lg border border-gray-300 px-4 py-2.5"
           >
             <option value="">
               {loadingCategories
                 ? "Cargando categorías..."
-                : categories.length === 0
-                  ? "No hay categorías"
-                  : "Seleccionar categoría"}
+                : mainCategories.length === 0
+                  ? "No hay categorías principales"
+                  : "Seleccionar categoría principal"}
             </option>
 
-            {categories.map((category) => (
+            {mainCategories.map((category) => (
               <option
                 key={category.id}
-                value={category.nombre}
+                value={category.id}
               >
                 {category.nombre}
               </option>
@@ -388,44 +404,90 @@ function EditProductPage() {
         </div>
 
         <div>
-          {fieldErrors.epoca && (
+          {fieldErrors.subcategoriaId && (
             <p
-              id="epoca-error"
+              id="subcategoriaId-error"
               role="alert"
               className="mb-3 rounded-lg bg-red-100 p-3 text-sm text-red-700"
             >
-              {fieldErrors.epoca}
+              {fieldErrors.subcategoriaId}
             </p>
           )}
 
           <label className="mb-2 block font-medium">
-            Época
+            Subcategoría
           </label>
 
           <select
-            name="epoca"
-            value={formData.epoca}
+            name="subcategoriaId"
+            value={formData.subcategoriaId}
+            onChange={handleSubcategoryChange}
+            required={availableSubcategories.length > 0}
+            disabled={
+              !formData.categoriaId ||
+              availableSubcategories.length === 0
+            }
+            aria-invalid={Boolean(fieldErrors.subcategoriaId)}
+            aria-describedby={
+              fieldErrors.subcategoriaId
+                ? "subcategoriaId-error"
+                : undefined
+            }
+            className="w-full rounded-lg border border-gray-300 px-4 py-2.5 disabled:cursor-not-allowed disabled:bg-gray-100 disabled:text-gray-500"
+          >
+            <option value="">
+              {!formData.categoriaId
+                ? "Primero seleccioná una categoría principal"
+                : availableSubcategories.length === 0
+                  ? "Esta categoría no tiene subcategorías"
+                  : "Seleccionar subcategoría"}
+            </option>
+
+            {availableSubcategories.map((category) => (
+              <option key={category.id} value={category.id}>
+                {category.nombre}
+              </option>
+            ))}
+          </select>
+        </div>
+
+        {requiresSeason && (
+        <div>
+          {fieldErrors.temporada && (
+            <p
+              id="temporada-error"
+              role="alert"
+              className="mb-3 rounded-lg bg-red-100 p-3 text-sm text-red-700"
+            >
+              {fieldErrors.temporada}
+            </p>
+          )}
+
+          <label className="mb-2 block font-medium">
+            Temporada
+          </label>
+
+          <select
+            name="temporada"
+            value={formData.temporada}
             onChange={handleChange}
             required
-            aria-invalid={Boolean(fieldErrors.epoca)}
+            aria-invalid={Boolean(fieldErrors.temporada)}
             aria-describedby={
-              fieldErrors.epoca ? "epoca-error" : undefined
+              fieldErrors.temporada
+                ? "temporada-error"
+                : undefined
             }
             className="w-full rounded-lg border border-gray-300 px-4 py-2.5"
           >
-            <option value="">
-              Seleccionar época
-            </option>
-
-            <option value="Verano">
-              Verano
-            </option>
-
-            <option value="Invierno">
-              Invierno
-            </option>
+            <option value="">Seleccionar temporada</option>
+            <option value="Verano">Verano</option>
+            <option value="Otoño">Otoño</option>
+            <option value="Invierno">Invierno</option>
+            <option value="Primavera">Primavera</option>
           </select>
         </div>
+        )}
 
         <div>
           {fieldErrors.condicion && (
@@ -459,8 +521,8 @@ function EditProductPage() {
               Seleccionar condición
             </option>
 
-            <option value="Como nueva">
-              Como nueva
+            <option value="Excelente estado">
+              Excelente estado
             </option>
 
             <option value="Muy buen estado">
@@ -555,6 +617,11 @@ function EditProductPage() {
             }
             className="w-full resize-y rounded-lg border border-gray-300 px-4 py-2.5 outline-none focus:border-sky-500"
           />
+
+          <p className="mt-2 text-sm text-gray-500">
+            Podés incluir talle, medidas, marca, modelo u otros
+            detalles relevantes.
+          </p>
         </div>
 
         <ImageManager
@@ -581,7 +648,7 @@ function EditProductPage() {
               imagesUploading ||
               !isFormValid ||
               loadingCategories ||
-              categories.length === 0
+              mainCategories.length === 0
             }
             className="w-full flex-1 rounded-lg bg-sky-600 py-3 font-medium text-white hover:bg-sky-700 disabled:cursor-not-allowed disabled:opacity-50"
           >

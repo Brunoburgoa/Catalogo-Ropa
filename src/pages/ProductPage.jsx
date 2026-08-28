@@ -11,6 +11,7 @@ import {
 import Navbar from "../components/Navbar/Navbar";
 import { useCart } from "../context/cartStore";
 import { getProductById } from "../services/productService";
+import { isClothingCategory } from "../utils/category";
 import { getOptimizedImageUrl } from "../utils/cloudinaryImage";
 
 function ProductPage() {
@@ -294,16 +295,6 @@ function ProductPage() {
             <div className="mt-7 grid grid-cols-2 gap-3">
               <div className="rounded-xl bg-neutral-50 p-4">
                 <p className="text-xs font-medium uppercase tracking-wide text-neutral-400">
-                  Talle
-                </p>
-
-                <p className="mt-1 font-semibold text-neutral-900">
-                  {product.talle}
-                </p>
-              </div>
-
-              <div className="rounded-xl bg-neutral-50 p-4">
-                <p className="text-xs font-medium uppercase tracking-wide text-neutral-400">
                   Condición
                 </p>
 
@@ -314,7 +305,7 @@ function ProductPage() {
 
               <div className="rounded-xl bg-neutral-50 p-4">
                 <p className="text-xs font-medium uppercase tracking-wide text-neutral-400">
-                  Categoría
+                  Categoría principal
                 </p>
 
                 <p className="mt-1 font-semibold text-neutral-900">
@@ -322,15 +313,31 @@ function ProductPage() {
                 </p>
               </div>
 
+              {product.subcategoria && (
               <div className="rounded-xl bg-neutral-50 p-4">
                 <p className="text-xs font-medium uppercase tracking-wide text-neutral-400">
-                  Época
+                  Subcategoría
                 </p>
 
                 <p className="mt-1 font-semibold text-neutral-900">
-                  {product.epoca}
+                  {product.subcategoria}
                 </p>
               </div>
+              )}
+
+              {isClothingCategory(product.categoria) &&
+                product.temporada && (
+              <div className="rounded-xl bg-neutral-50 p-4">
+                <p className="text-xs font-medium uppercase tracking-wide text-neutral-400">
+                  Temporada
+                </p>
+
+                <p className="mt-1 font-semibold text-neutral-900">
+                  {product.temporada || "Sin especificar"}
+                </p>
+              </div>
+              )}
+
             </div>
 
             <div className="mt-8">

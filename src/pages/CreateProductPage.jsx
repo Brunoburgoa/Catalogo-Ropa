@@ -5,6 +5,7 @@ import { createProduct } from "../services/productService";
 import { getCategories } from "../services/categoryService";
 
 import ImageManager from "../components/admin/ImageManager/ImageManager";
+import { isClothingCategory } from "../utils/category";
 import { validateProduct } from "../utils/productValidation";
 
 function CreateProductPage() {
@@ -13,9 +14,11 @@ function CreateProductPage() {
   const [formData, setFormData] = useState({
     nombre: "",
     precio: "",
-    talle: "",
+    categoriaId: "",
     categoria: "",
-    epoca: "",
+    subcategoriaId: "",
+    subcategoria: "",
+    temporada: "",
     condicion: "",
     estado: "Disponible",
     descripcion: "",
@@ -33,7 +36,21 @@ function CreateProductPage() {
   const [touchedFields, setTouchedFields] = useState({});
   const [submitAttempted, setSubmitAttempted] = useState(false);
 
-  const fieldErrors = validateProduct(formData);
+  const mainCategories = categories.filter(
+    (category) => !category.categoriaPadre,
+  );
+  const availableSubcategories = formData.categoriaId
+    ? categories.filter(
+        (category) =>
+          category.categoriaPadre === formData.categoriaId,
+      )
+    : [];
+  const requiresSeason = isClothingCategory(formData.categoria);
+
+  const fieldErrors = validateProduct(formData, {
+    requireSubcategory: availableSubcategories.length > 0,
+    requireSeason: requiresSeason,
+  });
   const visibleFieldErrors = Object.fromEntries(
     Object.entries(fieldErrors).filter(
       ([field]) => submitAttempted || touchedFields[field],
@@ -85,6 +102,37 @@ function CreateProductPage() {
       ...current,
       [name]: true,
     }));
+  };
+
+  const handleCategoryChange = (event) => {
+    const selectedCategory = mainCategories.find(
+      (category) => category.id === event.target.value,
+    );
+
+    setFormData((current) => ({
+      ...current,
+      categoriaId: selectedCategory?.id || "",
+      categoria: selectedCategory?.nombre || "",
+      subcategoriaId: "",
+      subcategoria: "",
+      temporada: isClothingCategory(selectedCategory?.nombre)
+        ? current.temporada
+        : "",
+    }));
+    setError("");
+  };
+
+  const handleSubcategoryChange = (event) => {
+    const selectedSubcategory = availableSubcategories.find(
+      (category) => category.id === event.target.value,
+    );
+
+    setFormData((current) => ({
+      ...current,
+      subcategoriaId: selectedSubcategory?.id || "",
+      subcategoria: selectedSubcategory?.nombre || "",
+    }));
+    setError("");
   };
 
   const handleImagesChange = (images) => {
@@ -151,6 +199,10 @@ function CreateProductPage() {
     }
   };
 
+  const handleCancel = () => {
+    navigate("/admin");
+  };
+
   return (
     <main className="mx-auto max-w-4xl px-6 py-8">
       <div className="mb-8 flex items-center justify-between">
@@ -205,7 +257,7 @@ function CreateProductPage() {
             value={formData.nombre}
             onChange={handleChange}
             onBlur={handleBlur}
-            placeholder="Ej: Remera Adidas"
+            placeholder="Ej: campera, celular, mesa..."
             required
             aria-invalid={Boolean(visibleFieldErrors.nombre)}
             aria-describedby={
@@ -248,105 +300,50 @@ function CreateProductPage() {
         </div>
 
         <div>
-          {visibleFieldErrors.talle && (
+          {visibleFieldErrors.categoriaId && (
             <p
-              id="talle-error"
+              id="categoriaId-error"
               role="alert"
               className="mb-3 rounded-lg bg-red-100 p-3 text-sm text-red-700"
             >
-              {visibleFieldErrors.talle}
+              {visibleFieldErrors.categoriaId}
             </p>
           )}
 
           <label className="mb-2 block font-medium">
-            Talle
+            Categoría principal
           </label>
 
           <select
-            name="talle"
-            value={formData.talle}
-            onChange={handleChange}
+            name="categoriaId"
+            value={formData.categoriaId}
+            onChange={handleCategoryChange}
             onBlur={handleBlur}
             required
-            aria-invalid={Boolean(visibleFieldErrors.talle)}
+            aria-invalid={Boolean(visibleFieldErrors.categoriaId)}
             aria-describedby={
-              visibleFieldErrors.talle ? "talle-error" : undefined
-            }
-            className="w-full rounded-lg border border-gray-300 px-4 py-2.5"
-          >
-            <option value="">
-              Seleccionar talle
-            </option>
-
-            <option value="XS">XS</option>
-            <option value="S">S</option>
-            <option value="M">M</option>
-            <option value="L">L</option>
-            <option value="XL">XL</option>
-            <option value="XXL">XXL</option>
-            <option value="Único">Único</option>
-
-            <option value="36">36</option>
-            <option value="38">38</option>
-            <option value="40">40</option>
-            <option value="42">42</option>
-            <option value="44">44</option>
-            <option value="46">46</option>
-            <option value="48">48</option>
-            <option value="50">50</option>
-            <option value="52">52</option>
-            <option value="54">54</option>
-            <option value="56">56</option>
-            <option value="58">58</option>
-            <option value="60">60</option>
-          </select>
-        </div>
-
-        <div>
-          {visibleFieldErrors.categoria && (
-            <p
-              id="categoria-error"
-              role="alert"
-              className="mb-3 rounded-lg bg-red-100 p-3 text-sm text-red-700"
-            >
-              {visibleFieldErrors.categoria}
-            </p>
-          )}
-
-          <label className="mb-2 block font-medium">
-            Categoría
-          </label>
-
-          <select
-            name="categoria"
-            value={formData.categoria}
-            onChange={handleChange}
-            onBlur={handleBlur}
-            required
-            aria-invalid={Boolean(visibleFieldErrors.categoria)}
-            aria-describedby={
-              visibleFieldErrors.categoria
-                ? "categoria-error"
+              visibleFieldErrors.categoriaId
+                ? "categoriaId-error"
                 : undefined
             }
             disabled={
               loadingCategories ||
-              categories.length === 0
+              mainCategories.length === 0
             }
             className="w-full rounded-lg border border-gray-300 px-4 py-2.5"
           >
             <option value="">
               {loadingCategories
                 ? "Cargando categorías..."
-                : categories.length === 0
-                  ? "No hay categorías"
-                  : "Seleccionar categoría"}
+                : mainCategories.length === 0
+                  ? "No hay categorías principales"
+                  : "Seleccionar categoría principal"}
             </option>
 
-            {categories.map((category) => (
+            {mainCategories.map((category) => (
               <option
                 key={category.id}
-                value={category.nombre}
+                value={category.id}
               >
                 {category.nombre}
               </option>
@@ -355,42 +352,94 @@ function CreateProductPage() {
         </div>
 
         <div>
-          {visibleFieldErrors.epoca && (
+          {visibleFieldErrors.subcategoriaId && (
             <p
-              id="epoca-error"
+              id="subcategoriaId-error"
               role="alert"
               className="mb-3 rounded-lg bg-red-100 p-3 text-sm text-red-700"
             >
-              {visibleFieldErrors.epoca}
+              {visibleFieldErrors.subcategoriaId}
             </p>
           )}
 
           <label className="mb-2 block font-medium">
-            Época
+            Subcategoría
           </label>
 
           <select
-            name="epoca"
-            value={formData.epoca}
+            name="subcategoriaId"
+            value={formData.subcategoriaId}
+            onChange={handleSubcategoryChange}
+            onBlur={handleBlur}
+            required={availableSubcategories.length > 0}
+            disabled={
+              !formData.categoriaId ||
+              availableSubcategories.length === 0
+            }
+            aria-invalid={Boolean(
+              visibleFieldErrors.subcategoriaId,
+            )}
+            aria-describedby={
+              visibleFieldErrors.subcategoriaId
+                ? "subcategoriaId-error"
+                : undefined
+            }
+            className="w-full rounded-lg border border-gray-300 px-4 py-2.5 disabled:cursor-not-allowed disabled:bg-gray-100 disabled:text-gray-500"
+          >
+            <option value="">
+              {!formData.categoriaId
+                ? "Primero seleccioná una categoría principal"
+                : availableSubcategories.length === 0
+                  ? "Esta categoría no tiene subcategorías"
+                  : "Seleccionar subcategoría"}
+            </option>
+
+            {availableSubcategories.map((category) => (
+              <option key={category.id} value={category.id}>
+                {category.nombre}
+              </option>
+            ))}
+          </select>
+        </div>
+
+        {requiresSeason && (
+        <div>
+          {visibleFieldErrors.temporada && (
+            <p
+              id="temporada-error"
+              role="alert"
+              className="mb-3 rounded-lg bg-red-100 p-3 text-sm text-red-700"
+            >
+              {visibleFieldErrors.temporada}
+            </p>
+          )}
+
+          <label className="mb-2 block font-medium">
+            Temporada
+          </label>
+
+          <select
+            name="temporada"
+            value={formData.temporada}
             onChange={handleChange}
             onBlur={handleBlur}
             required
-            aria-invalid={Boolean(visibleFieldErrors.epoca)}
+            aria-invalid={Boolean(visibleFieldErrors.temporada)}
             aria-describedby={
-              visibleFieldErrors.epoca ? "epoca-error" : undefined
+              visibleFieldErrors.temporada
+                ? "temporada-error"
+                : undefined
             }
             className="w-full rounded-lg border border-gray-300 px-4 py-2.5"
           >
-            <option value="">
-              Seleccionar época
-            </option>
-
+            <option value="">Seleccionar temporada</option>
             <option value="Verano">Verano</option>
-            <option value="Invierno">
-              Invierno
-            </option>
+            <option value="Otoño">Otoño</option>
+            <option value="Invierno">Invierno</option>
+            <option value="Primavera">Primavera</option>
           </select>
         </div>
+        )}
 
         <div>
           {visibleFieldErrors.condicion && (
@@ -425,8 +474,8 @@ function CreateProductPage() {
               Seleccionar condición
             </option>
 
-            <option value="Como nueva">
-              Como nueva
+            <option value="Excelente estado">
+              Excelente estado
             </option>
 
             <option value="Muy buen estado">
@@ -507,6 +556,11 @@ function CreateProductPage() {
             }
             className="w-full resize-y rounded-lg border border-gray-300 px-4 py-2.5 outline-none focus:border-sky-500"
           />
+
+          <p className="mt-2 text-sm text-gray-500">
+            Podés incluir talle, medidas, marca, modelo u otros
+            detalles relevantes.
+          </p>
         </div>
 
         <ImageManager
@@ -516,22 +570,33 @@ function CreateProductPage() {
           validationError={visibleFieldErrors.imagenes}
         />
 
-        <button
-          type="submit"
-          disabled={
-            saving ||
-            imagesUploading ||
-            loadingCategories ||
-            categories.length === 0
-          }
-          className="w-full rounded-lg bg-sky-600 py-3 font-medium text-white hover:bg-sky-700 disabled:cursor-not-allowed disabled:opacity-50"
-        >
-          {saving
-            ? "Guardando producto..."
-            : imagesUploading
-              ? "Subiendo imágenes..."
-            : "Crear producto"}
-        </button>
+        <div className="flex flex-col-reverse gap-3 sm:flex-row">
+          <button
+            type="button"
+            onClick={handleCancel}
+            disabled={saving || imagesUploading}
+            className="w-full rounded-lg border border-gray-300 bg-white py-3 font-medium text-gray-700 transition-colors hover:bg-gray-100 disabled:cursor-not-allowed disabled:opacity-50 sm:w-auto sm:min-w-40"
+          >
+            Cancelar
+          </button>
+
+          <button
+            type="submit"
+            disabled={
+              saving ||
+              imagesUploading ||
+              loadingCategories ||
+              mainCategories.length === 0
+            }
+            className="w-full flex-1 rounded-lg bg-sky-600 py-3 font-medium text-white hover:bg-sky-700 disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            {saving
+              ? "Guardando producto..."
+              : imagesUploading
+                ? "Subiendo imágenes..."
+                : "Crear producto"}
+          </button>
+        </div>
       </form>
     </main>
   );

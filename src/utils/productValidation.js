@@ -1,9 +1,7 @@
 const REQUIRED_FIELD_MESSAGES = {
   nombre: "Ingresá el nombre del producto.",
   precio: "Ingresá el precio del producto.",
-  talle: "Seleccioná un talle.",
-  categoria: "Seleccioná una categoría.",
-  epoca: "Seleccioná una época.",
+  categoriaId: "Seleccioná una categoría principal.",
   condicion: "Seleccioná una condición.",
   estado: "Seleccioná el estado del producto.",
   descripcion: "Ingresá una descripción.",
@@ -13,7 +11,13 @@ function isEmpty(value) {
   return String(value ?? "").trim() === "";
 }
 
-export function validateProduct(product) {
+export function validateProduct(
+  product,
+  {
+    requireSubcategory = false,
+    requireSeason = false,
+  } = {},
+) {
   const errors = {};
 
   Object.entries(REQUIRED_FIELD_MESSAGES).forEach(
@@ -23,6 +27,18 @@ export function validateProduct(product) {
       }
     },
   );
+
+  if (
+    requireSubcategory &&
+    isEmpty(product.subcategoriaId)
+  ) {
+    errors.subcategoriaId =
+      "Seleccioná una subcategoría.";
+  }
+
+  if (requireSeason && isEmpty(product.temporada)) {
+    errors.temporada = "Seleccioná una temporada.";
+  }
 
   if (
     !isEmpty(product.precio) &&

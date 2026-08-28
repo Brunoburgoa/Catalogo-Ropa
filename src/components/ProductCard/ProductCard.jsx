@@ -54,9 +54,9 @@ function ProductCard({ producto }) {
             </div>
           )}
 
-          {producto.categoria && (
+          {(producto.subcategoria || producto.categoria) && (
             <span className="absolute left-3 top-3 rounded-full bg-white/90 px-3 py-1.5 text-xs font-semibold text-neutral-800 shadow-sm backdrop-blur-sm">
-              {producto.categoria}
+              {producto.subcategoria || producto.categoria}
             </span>
           )}
 
@@ -70,14 +70,10 @@ function ProductCard({ producto }) {
         </div>
 
         <div className="p-5">
-          <div className="flex items-start justify-between gap-3">
+          <div>
             <h2 className="line-clamp-2 text-base font-bold leading-snug text-neutral-900">
               {producto.nombre}
             </h2>
-
-            <span className="shrink-0 rounded-full bg-neutral-100 px-2.5 py-1 text-xs font-semibold text-neutral-600">
-              Talle {producto.talle}
-            </span>
           </div>
 
           <p className="mt-3 text-2xl font-bold tracking-tight text-[#27221e]">
